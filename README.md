@@ -27,30 +27,34 @@ webrtcvad
 
 ### File Structure
 
-|_dataset
-    |_evaluation_setup
-        train.csv
-        test.csv
-        evaluate.csv
-    |_audio
-        *audio.wav
-    |_video
-        *video.mp4
-|_model_zoo
-|_models
-    vgg_m.py
-    dcase_past.py
-main_train.py
-data_engin.py
-fit_model.py
-au_transform.py
+|_dataset  
+    |_evaluation_setup  
+        train.csv  
+        test.csv  
+        evaluate.csv  
+    |_audio  
+        *audio.wav  
+    |_video  
+        *video.mp4  
+|_model_zoo  
+|_models  
+    vgg_m.py  
+    dcase_past.py  
+main_train.py  
+data_engin.py  
+fit_model.py  
+au_transform.py  
 
 ## Description
 
 *main_train.py* is the main file to run for training.
+
 *fit_model.py* contains the training and validation processes.
+
 *data_engin.py* generates data batches.
+
 *au_transform.py* is used to extract features and transforms them into tensors.
+
 *vgg_m.py* and *dcase_past.py* contains the CNN architecture.
 
 ## Usage
