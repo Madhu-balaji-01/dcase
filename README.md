@@ -2,28 +2,28 @@
 
 ## System
 
-OS: Ubuntu 16.04/18.04
-Language: Python 3.6
-Library: Pytorch 1.8
-CUDA: v10.1/v10.2
+OS: Ubuntu 16.04/18.04  
+Language: Python 3.6  
+Library: Pytorch 1.8  
+CUDA: v10.1/v10.2  
 GPU: Nvidia GeForce RTX 2080
 
 ## Requirements
-*the system was tested in conda environment*
+*The system was tested in conda environment.*
 
-Packages required:
-pytorch=1.8 torchaudio torchvision
-cudatoolkit=10.1/10.2 cudnn
-numpy
-pandas
-scipy
-scikit-learn
-matplotlib
-tqdm
-pyaudio
-librosa
-pyroomacoustics
-webrtcvad
+Packages required:  
+pytorch=1.8 torchaudio torchvision  
+cudatoolkit=10.1/10.2 cudnn  
+numpy  
+pandas  
+scipy  
+scikit-learn  
+matplotlib  
+tqdm  
+pyaudio  
+librosa  
+pyroomacoustics  
+webrtcvad  
 
 ### File Structure
 
