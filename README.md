@@ -27,23 +27,23 @@ webrtcvad
 
 ### File Structure
 
-|_dataset  
-    |_evaluation_setup  
-        train.csv  
-        test.csv  
-        evaluate.csv  
-    |_audio  
+*|_dataset  
+    *|_evaluation_setup  
+        *train.csv  
+        *test.csv  
+        *evaluate.csv  
+    *|_audio  
         *audio.wav  
     |_video  
         *video.mp4  
-|_model_zoo  
-|_models  
-    vgg_m.py  
-    dcase_past.py  
-main_train.py  
-data_engin.py  
-fit_model.py  
-au_transform.py  
+*|_model_zoo  
+*|_models  
+    *vgg_m.py  
+    *dcase_past.py  
+*main_train.py  
+*data_engin.py  
+*fit_model.py  
+*au_transform.py  
 
 ## Description
 
