@@ -25,6 +25,10 @@ librosa
 pyroomacoustics  
 webrtcvad  
 
+Dataset:  
+
+The dataset can be downloaded from the official zenodo page at https://zenodo.org/record/4477542.
+
 ### File Structure
 
 * dataset/
