@@ -77,12 +77,7 @@ class Audio_Transform:
         labels = []
         for i, file in enumerate(filename_list):
             try:
-                ip2, fs = torch_audio.load(file)
-                if self.mono == 'mean':
-                    ip = torch.mean(ip2, dim=0, keepdim=True)
-                elif self.mono == 'diff':
-                    ip = (ip2[0] - ip2[1])/2
-                    ip = ip.view(1,-1)
+                ip, fs = torch_audio.load(file)
                 raw_au_dict[str(i)] = self.DataNode(ip, fs, ip.shape[1] / fs)
                 labels.append(label_list[i])
             except:
@@ -99,7 +94,7 @@ class Audio_Transform:
             aud = raw_au_dict[key]
             # resampling of audio data
             if aud.fs == 44100:
-                aud.data = resamp(aud.data)
+                aud.data = (aud.data)
             elif aud.fs == 16000:
                 pass
             else:
@@ -176,6 +171,11 @@ class Audio_Transform:
         spectra = self.spectrum(ip_norm)
         spectra_db = self.am_to_db(spectra)
         spectra_db_norm = self.normalize_spectra(spectra_db)
+        spectra_db_norm2 = torch.stack((spectra_db_norm[0::2].detach().clone(),spectra_db_norm[1::2].detach().clone()), dim=0)
+        if self.mono == 'mean':
+            spectra_db_norm = torch.mean(spectra_db_norm2, dim=0)
+        elif self.mono == 'diff':
+            spectra_db_norm = (spectra_db_norm2[0] - spectra_db_norm2[1])/2
         spectra_img = self.audio_to_img(spectra_db_norm)
 
         # send the data to gpu
@@ -205,131 +205,3 @@ if __name__ == '__main__':
     transform = Audio_Transform(spectra_type='Spectrum', device=device, para=para)
 
     x, y = transform.main(filename_list, label_list)
-
-
-
-
-
-
-
-
-
-
-
-
-#
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#
-# torchaudio.set_audio_backend(backend="sox_io")
-
-
-# fs = 16000
-# time = 10
-
-# class DataNode():
-#     def __init__(self, data, fs, time):
-#         self.data = data
-#         self.fs = fs
-#         self.time = time
-#
-# def read_raw_wav(filename_list):
-#     raw_au_dict = {}
-#     for i, file in enumerate(filename_list):
-#         ip, fs = torchaudio.load(file)
-#         raw_au_dict[str(i)] = DataNode(ip,fs,ip.shape[1]/fs)
-#     return raw_au_dict
-#
-# def rawau_to_tensor(raw_au_dict):
-#
-#     ip = torch.empty(1,time*fs)
-#     resamp = torchaudio.transforms.Resample(orig_freq=44100,new_freq=fs)
-#
-#     for key in raw_au_dict:
-#         aud = raw_au_dict[key]
-#         # resampling of audio data
-#         if aud.fs == 44100:
-#             aud.data = resamp(aud.data)
-#         elif aud.fs == 16000:
-#             pass
-#         else:
-#             aud.data = torchaudio.transforms.Resample(orig_freq=aud.fs,new_freq=fs)(aud.data)
-#         # fixing audio data size
-#         if aud.time > time:
-#             aud.data = aud.data[:, 0:fs*time]
-#         elif aud.time < time:
-#             if aud.time >= time/2:
-#                 req_extra_data = (fs*time) - aud.data.shape[1]
-#                 aud.data = torch.hstack((aud.data, aud.data[:,0:req_extra_data]))
-#             else:
-#                 while aud.time < time/2:
-#                     aud.data = torch.hstack((aud.data, aud.data))
-#                     aud.time = aud.time*2
-#                 req_extra_data = (fs * time) - aud.data.shape[1]
-#                 aud.data = torch.hstack((aud.data, aud.data[:, 0:req_extra_data]))
-#         # data matrix
-#         if key == '0':
-#             ip = aud.data
-#         else:
-#             ip = torch.vstack((ip, aud.data))
-#
-#     return ip
-#
-# def normalize(ip):
-#     # Subtract the mean, and scale to the interval [-1,1]
-#     ip_min_mean = ip - ip.mean(dim=1)[:, None]
-#     ip_norm = ip_min_mean/ip_min_mean.max(dim=1).values[:,None]
-#     return ip_norm
-#
-# def trans_spectrogram():
-#     spectrum = torchaudio.transforms.Spectrogram(n_fft=n_fft,
-#                                                  win_length=win_length,
-#                                                  hop_length=hop_length,
-#                                                  normalized=True)
-#     return spectrum
-#
-# def trans_melspectrogram():
-#
-#     spectrum = torchaudio.transforms.MelSpectrogram(sample_rate=fs,
-#                                                     win_length=win_length,
-#                                                     hop_length=hop_length,
-#                                                     n_fft=n_fft,
-#                                                     f_min=0,
-#                                                     f_max=fs/2,
-#                                                     n_mels=128)
-#
-#     return spectrum
-#
-# def trans_am_to_db():
-#     return torchaudio.transforms.AmplitudeToDB()
-
-# raw_au_dict = read_raw_wav(filename_list)
-# ip = rawau_to_tensor(raw_au_dict)
-# ip_norm = normalize(ip)
-
-# win_length = int(0.05*fs)
-# hop_length = int(0.02*fs)
-# n_fft = 1024
-# spectrum = torchaudio.transforms.Spectrogram(n_fft=1024,
-#                                              win_length = win_length,
-#                                              hop_length= hop_length,
-#                                              normalized=True)
-#
-# am_to_db = torchaudio.transforms.AmplitudeToDB()
-
-# ip_norm = ip_norm.to(device)
-#
-# spectrum = trans_spectrogram()
-# am_to_db = trans_am_to_db()
-# mel_spectrum = trans_melspectrogram()
-#
-# spectrum = spectrum.to(device)
-# am_to_db = am_to_db.to(device)
-# mel_spectrum = mel_spectrum.to(device)
-#
-#
-# spectra = spectrum(ip_norm)
-# spectra_db = am_to_db(spectra)
-# spectra_mel = mel_spectrum(ip_norm)
-# spectra_mel_db = am_to_db(spectra_mel)
-# plt.imshow(spectra.t().numpy())
-

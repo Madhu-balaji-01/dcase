@@ -17,20 +17,29 @@ lr_state = { 'lr' : lr,
             'learning_rate_decay_every' : 3,
             'learning_rate_decay_rate' : 0.9
             }
-# save_model_address = './model_zoo/dcase_tests/'
-save_model_address = './model_zoo/dcase_4/'
+save_model_address = './model_zoo/dcase_tests/'
+# save_model_address = './model_zoo/dcase_5/'
 pre_train_model_PATH = None
 
-train = Data_Engin(address='/home/audio_server1/intern/dataset/dcase/evaluation_setup/modify_train.csv', spectra_type='Mel_Spectrum',
+# spectra_type = 'Mel_Spectrum'
+spectra_type = 'Spectrum'
+
+method = 'pre'
+# method = 'post'
+
+# mono= 'mean'
+mono = 'diff'
+
+train = Data_Engin(method=method, mono=mono, address='./dataset/dcase/evaluation_setup/modify_train.csv', spectra_type=spectra_type,
                       device=device, batch_size=64)
 
-valid = Data_Engin(address='/home/audio_server1/intern/dataset/dcase/evaluation_setup/modify_evaluate.csv', spectra_type='Mel_Spectrum',
+valid = Data_Engin(method=method, mono=mono, address='./dataset/dcase/evaluation_setup/modify_evaluate.csv', spectra_type=spectra_type,
                       device=device, batch_size=64)
 
-# train = Data_Engin(address='/home/audio_server1/intern/dataset/dcase/evaluation_setup/modify_train.csv', spectra_type='Spectrum',
+# train = Data_Engin(address='./dataset/dcase/evaluation_setup/modify_train.csv', spectra_type='Spectrum',
 #                       device=device, batch_size=64)
 
-# valid = Data_Engin(address='/home/audio_server1/intern/dataset/dcase/evaluation_setup/modify_evaluate.csv', spectra_type='Spectrum',
+# valid = Data_Engin(address='./dataset/dcase/evaluation_setup/modify_evaluate.csv', spectra_type='Spectrum',
 #                       device=device, batch_size=64)
 
 # test = Data_Engin(address='./dataset/test.csv', spectra_type='Spectrum',

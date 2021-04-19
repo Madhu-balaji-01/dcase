@@ -1,4 +1,5 @@
-from au_transform import Audio_Transform
+# from au_transform import Audio_Transform
+# from au_transform2 import Audio_Transform
 import pandas as pd
 import random
 import torch
@@ -6,11 +7,15 @@ import math
 
 class Data_Engin:
 
-    def __init__(self, address=None,
+    def __init__(self, method='post', mono='mean', address=None,
                  spectra_type=None, device=None, batch_size=64,
                  fs=16000, time=10, n_fft = 1024,
                  win_len=0.05, hop_len=0.02):
-
+        if method=='pre':
+            from au_transform import Audio_Transform
+        elif method=='post':
+            from au_transform2 import Audio_Transform
+        self.mono = mono
         self.data_address = address
         # self.data_type = type
         self.device = device
@@ -24,7 +29,8 @@ class Data_Engin:
         self.para['win_length'] = int(win_len * fs)
         self.para['hop_length'] = int(hop_len * fs)
 
-        self.transform = Audio_Transform(spectra_type=self.spectra_type,
+        self.transform = Audio_Transform(mono=self.mono,
+                                         spectra_type=self.spectra_type,
                                          device=self.device,
                                          para=self.para)
 
