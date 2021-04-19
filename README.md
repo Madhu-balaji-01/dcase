@@ -48,6 +48,7 @@ The dataset can be downloaded from the official zenodo page at https://zenodo.or
 * data_engin.py
 * fit_model.py
 * au_transform.py
+* au_transform2.py
 
 ## Description
 
@@ -57,7 +58,7 @@ The dataset can be downloaded from the official zenodo page at https://zenodo.or
 
 **data_engin.py** generates data batches.
 
-**au_transform.py** is used to extract features and transforms them into tensors.
+**au_transform.py** and **au_transform2.py** is used to extract features and transforms them into tensors.
 
 **vgg_m.py** and **dcase_past.py** contains the CNN architecture.
 
