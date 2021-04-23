@@ -67,14 +67,15 @@ Run the script from terminal
     python main_train.py
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -sm SAVE_MODEL_ADDRESS, --save_model_address SAVE_MODEL_ADDRESS
-                        Path to save models.
-  -s SPECTRA, --spectra SPECTRA
-                        Type of spectrogram: [Mel_Spectrum, Spectrum]
-  -me METHOD, --method METHOD
-                        Timing to merge channels: [pre, post]
-  -mo MONO, --mono MONO
-                        Method to merge channels: [mean, diff]
-  -n NETWORK, --network NETWORK
-                        Network to be used: [vgg_m, dcase1, dcase2]
+  * -h, --help  
+    * show this help message and exit  
+  * -sm SAVE_MODEL_ADDRESS, --save_model_address SAVE_MODEL_ADDRESS  
+    * Path to save models.  
+  * -s SPECTRA, --spectra SPECTRA  
+    * Type of spectrogram: [Mel_Spectrum, Spectrum]  
+  * -me METHOD, --method METHOD  
+    * Timing to merge channels: [pre, post]  
+  * -mo MONO, --mono MONO  
+    * Method to merge channels: [mean, diff]  
+  * -n NETWORK, --network NETWORK  
+    * Network to be used: [vgg_m, dcase1, dcase2]
