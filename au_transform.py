@@ -106,7 +106,7 @@ class Audio_Transform:
                                                         # win_length=self.win_length,
                                                         # hop_length=self.hop_length,
                                                         n_fft=self.n_fft,
-                                                        f_min=20,
+                                                        f_min=0,
                                                         f_max=8000,
                                                         n_mels=128,
                                                         normalized=True)
