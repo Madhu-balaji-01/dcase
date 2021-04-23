@@ -1,5 +1,4 @@
-# from au_transform import Audio_Transform
-# from au_transform2 import Audio_Transform
+from au_transform import Audio_Transform
 import pandas as pd
 import random
 import torch
@@ -11,13 +10,9 @@ class Data_Engin:
                  spectra_type=None, device=None, batch_size=64,
                  fs=16000, time=10, n_fft = 1024,
                  win_len=0.05, hop_len=0.02):
-        if method=='pre':
-            from au_transform import Audio_Transform
-        elif method=='post':
-            from au_transform2 import Audio_Transform
+        self.method = method
         self.mono = mono
         self.data_address = address
-        # self.data_type = type
         self.device = device
         self.batch_size = batch_size
         self.spectra_type = spectra_type
@@ -26,10 +21,11 @@ class Data_Engin:
         self.para['fs'] = fs
         self.para['time'] = time
         self.para['n_fft'] = n_fft
-        self.para['win_length'] = int(win_len * fs)
-        self.para['hop_length'] = int(hop_len * fs)
+        # self.para['win_length'] = int(win_len * fs)
+        # self.para['hop_length'] = int(hop_len * fs)
 
-        self.transform = Audio_Transform(mono=self.mono,
+        self.transform = Audio_Transform(method=self.method,
+                                         mono=self.mono,
                                          spectra_type=self.spectra_type,
                                          device=self.device,
                                          para=self.para)
@@ -46,20 +42,16 @@ class Data_Engin:
         key = [key for key in data_raw.keys()]
         len_data = len(data_raw[key[0]])
         data = []
-        # aud_list = []
-        # label = []
+
         for i in range(len_data):
             data.append([data_raw[key[0]][i], int(data_raw[key[2]][i])])
-            # aud_list.append(data_raw[key[0]][i])
-            # label.append(data_raw[key[1]][i])
+
         return data
 
     def mini_batch(self):
 
         if self.batch_itr >= self.no_batches:
             self.batch_itr = 0
-            # self.shuffle_data()
-            # print('shuffle')
 
         start = int(self.batch_itr*self.batch_size)
         end = int((self.batch_itr+1)*self.batch_size)

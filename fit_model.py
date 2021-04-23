@@ -24,7 +24,6 @@ class Fit_Model:
 
     def __clip_gradient(self, optimizer, grad_clip):
         for group in optimizer.param_groups:
-            # print(group['params'])
             for param in group['params']:
                 param.grad.data.clamp_(-grad_clip, grad_clip)
 
@@ -38,9 +37,9 @@ class Fit_Model:
             self.current_lr = self.lr_state['lr']
 
     def save_model(self, epoch ,valid_acc, valid_loss):
-        model_name_save = '{}Epoch{}-ACC{}.pth'.format(self.save_model_address,
+        model_name_save = '{}Epoch{}-Acc{}.pth'.format(self.save_model_address,
                                                 str(epoch),
-                                                str(np.round(valid_acc,4)))
+                                                str(np.round(float(valid_acc),4)))
         torch.save({
                 'epoch': epoch,
                 'model_state_dict': self.network.state_dict(),
@@ -64,7 +63,6 @@ class Fit_Model:
         data.shuffle_data()
         print('no of batched', data.no_batches)
         for i in tqdm(range(data.no_batches)):  # range(train.no_batch)
-            # print('batch_processed',i)
             inputs, labels = data.mini_batch()
             labels = labels.long()
             outputs = self.network(inputs)
@@ -77,13 +75,11 @@ class Fit_Model:
 
 
             _, predicted = torch.max(outputs.data, 1)
-            # _, original = torch.max(labels.data, 0)
             original = labels.data
             total += labels.size(0)
             correct += predicted.eq(original.data).cpu().sum()
             train_loss += loss.item()
 
-        # epoch_acc = torch.true_divide(correct, total).data
         epoch_acc = 100. * correct/total
         epoch_loss = train_loss / data.no_batches
 
@@ -106,7 +102,6 @@ class Fit_Model:
         data.shuffle_data()
         with torch.no_grad():
             for i in tqdm(range(data.no_batches)):  # range(valid.no_batch)
-                # print('batch_processed', i)
                 inputs, labels = data.mini_batch()
                 labels = labels.long()
                 outputs = self.network(inputs)
@@ -114,7 +109,6 @@ class Fit_Model:
                 loss = self.criteria(outputs, labels)
 
                 _, predicted = torch.max(outputs.data, 1)
-                # _, original = torch.max(labels.data, 0)
                 original = labels.data
                 total += labels.size(0)
                 correct += predicted.eq(original.data).cpu().sum()
