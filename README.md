@@ -42,13 +42,11 @@ The dataset can be downloaded from the official zenodo page at https://zenodo.or
         * *video.mp4
 * model_zoo/
 * models/
-    * vgg_m.py
-    * dcase_past.py
+    * model.py
 * main_train.py
 * data_engin.py
 * fit_model.py
 * au_transform.py
-* au_transform2.py
 
 ## Description
 
@@ -58,12 +56,25 @@ The dataset can be downloaded from the official zenodo page at https://zenodo.or
 
 **data_engin.py** generates data batches.
 
-**au_transform.py** and **au_transform2.py** is used to extract features and transforms them into tensors.
+**au_transform.py** is used to extract features and transforms them into tensors.
 
-**vgg_m.py** and **dcase_past.py** contains the CNN architecture.
+**model.py** contains the CNN architecture.
 
 ## Usage
 
 Run the script from terminal  
   
     python main_train.py
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -sm SAVE_MODEL_ADDRESS, --save_model_address SAVE_MODEL_ADDRESS
+                        Path to save models.
+  -s SPECTRA, --spectra SPECTRA
+                        Type of spectrogram: [Mel_Spectrum, Spectrum]
+  -me METHOD, --method METHOD
+                        Timing to merge channels: [pre, post]
+  -mo MONO, --mono MONO
+                        Method to merge channels: [mean, diff]
+  -n NETWORK, --network NETWORK
+                        Network to be used: [vgg_m, dcase1, dcase2]
