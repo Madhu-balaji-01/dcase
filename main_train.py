@@ -44,7 +44,7 @@ pre_train_model_PATH = None
 save_model_address = args.save_model_address
 spectra_type = args.spectra
 method = args.method
-mono= args.mono
+mono = args.mono
 
 if args.network == 'vgg_m':
   network = VGG_M(no_class=no_class)
@@ -57,17 +57,19 @@ train = Data_Engin(method=method, mono=mono,
                    address='./dataset/dcase/evaluation_setup/modify_train.csv', 
                    spectra_type=spectra_type,
                    device=device, 
-                   batch_size=64,
-                   fs=48000,
-                   n_fft=2048)
+                   batch_size=16,
+                   fs=16000,
+                   n_fft=1024,
+                   n_mels=500)
 
 valid = Data_Engin(method=method, mono=mono,
                    address='./dataset/dcase/evaluation_setup/modify_evaluate.csv',
                    spectra_type=spectra_type,
                    device=device,
-                   batch_size=64,
-                   fs=48000,
-                   n_fft=2048)
+                   batch_size=16,
+                   fs=16000,
+                   n_fft=1024,
+                   n_mels=500)
 
 if torch.cuda.device_count() > 1:
   print("Let's use", torch.cuda.device_count(), "GPUs!")

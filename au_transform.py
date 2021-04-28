@@ -21,6 +21,7 @@ class Audio_Transform:
         self.fs = para['fs']
         self.time= para['time']
         self.n_fft = para['n_fft']
+        self.n_mels = para['n_mels']
         # self.win_length = para['win_length']
         # self.hop_length = para['hop_length']
         if self.spectra_type == 'Mel_Spectrum':
@@ -108,7 +109,7 @@ class Audio_Transform:
                                                         n_fft=self.n_fft,
                                                         f_min=0,
                                                         f_max=8000,
-                                                        n_mels=128,
+                                                        n_mels=self.n_mels,
                                                         normalized=True)
 
         return spectrum
