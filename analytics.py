@@ -7,7 +7,7 @@ import itertools
 from sklearn.metrics import confusion_matrix
 
 from data_engin import Data_Engin
-from models.vgg_m import VGG_M
+from models.model import VGG_M, DCASE_PAST, DCASE_PAST2
 from fit_model import Fit_Model
 
 from tqdm import tqdm
@@ -68,7 +68,6 @@ def infer(network, valid_data_engine):
             outputs = network(inputs)
 
             _, predicted = torch.max(outputs.data, 1)
-            # _, original = torch.max(labels.data, 0)
             original = labels.data
             total += labels.size(0)
             correct += predicted.eq(original.data).cpu().sum()
@@ -92,22 +91,29 @@ if __name__ == '__main__':
     torch.cuda.empty_cache()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    classes = ['silence', 'clapping', 'laughing', 'scream-shout', 'conversation', 'happy', 'angry']
+    # classes = ['silence', 'clapping', 'laughing', 'scream-shout', 'conversation', 'happy', 'angry']
     classes = ['airport', 'shopping_mall', 'metro_station', 'street_pedestrian', 'public_square', 'street_traffic', 'tram', 'bus', 'metro', 'park']
     
-    no_classes = len(classes)
+    no_class = len(classes)
 
-    test = Data_Engin(address='./dataset/dcase/evaluation_setup/modify_evaluate2.csv', spectra_type='Spectrum',
-                          device=device, batch_size=64)
+    
+    test = Data_Engin(method='pre', mono='mean',
+                   address='./dataset/dcase/evaluation_setup/modify_evaluate.csv',
+                   spectra_type='Mel_Spectrum',
+                   device=device,
+                   batch_size=64,
+                   fs=16000,
+                   n_fft=1024,
+                   n_mels=500)
 
-    network = VGG_M(no_class=no_classes)
+    network = VGG_M(no_class=no_class)
 
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
       network = nn.DataParallel(network, device_ids=[0, 1])
 
     network = network.to(device)
-    network = load_model('./model_zoo/dcase_vgg_m_sub_b64/Epoch27-ACCtensor(59.8772).pth', network)
+    network = load_model('./model_zoo/dcase_7/Epoch28-ACCtensor(60.5748).pth', network)
 
     acc, all_targets, all_predicted = infer(network,test)
 
@@ -119,5 +125,6 @@ if __name__ == '__main__':
     plt.figure(figsize=(10, 8))
     plot_confusion_matrix(matrix, classes=classes, normalize=True,
                           title= 'VGG-M'+' Confusion Matrix (Accuracy: %0.3f%%)' %acc)
+    plt.show()
     # plt.savefig(os.path.join(path, opt.split + '_cm.png'))
     # plt.close()
