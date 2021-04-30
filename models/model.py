@@ -1,3 +1,4 @@
+from torch.autograd.grad_mode import F
 import torch.nn as nn
 # import torch.nn.functional as F
 import torch
@@ -32,7 +33,7 @@ class VGG_M(nn.Module):
         self.fc6 = Conv_Layer(256, 4096, kernel_size=(9, 1), stride=(1, 1), padding=0)
         self.apool6 = nn.AdaptiveAvgPool2d((1,1))
         self.fc7 = nn.Linear(4096,1024)
-        self.fc8 = nn.Linear(1024, no_class)
+        self.fc_out = nn.Linear(1024, no_class)
 
     def features(self,x):
         out = self.conv1(x)
@@ -51,7 +52,7 @@ class VGG_M(nn.Module):
     def classifier(self,x):
         out = self.fc7(x)
         out = self.relu(out)
-        out = self.fc8(out)
+        out = self.fc_out(out)
         return out
 
     def forward(self,x):
@@ -71,7 +72,7 @@ class DCASE_PAST(nn.Module):
         self.apool4 = nn.AdaptiveAvgPool2d((1,1))
         self.fc5 = nn.Linear(512, 256)
         self.drop5 = nn.Dropout2d()
-        self.fc6 = nn.Linear(256, no_class)
+        self.fc_out = nn.Linear(256, no_class)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -84,7 +85,7 @@ class DCASE_PAST(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.fc5(out)
         out = self.drop5(out)
-        out = self.fc6(out)
+        out = self.fc_out(out)
         return out
 
 class DCASE_PAST2(nn.Module):
@@ -99,7 +100,7 @@ class DCASE_PAST2(nn.Module):
         self.conv5 = Conv_Layer(512, 512, kernel_size=(3,3), stride=(1,1), padding=0)
         self.glbmaxpool = nn.AdaptiveMaxPool2d((1,1))
         self.fc6 = nn.Linear(512, 256)
-        self.fc7 = nn.Linear(256, no_class)
+        self.fc_out = nn.Linear(256, no_class)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -114,12 +115,39 @@ class DCASE_PAST2(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.fc6(out)
         out = self.relu(out)
-        out = self.fc7(out)
+        out = self.fc_out(out)
+        return out
+
+class ENSEMBLE(nn.Module):
+    def __init__(self, model_a, model_b, no_class):
+        super(ENSEMBLE, self).__init__()
+        self.model_a = model_a
+        self.model_b = model_b
+        
+        self.model_a.fc_out = nn.Identity()
+        self.model_b.fc_out = nn.Identity()
+        
+        self.relu = nn.ReLU()
+        
+        self.ensemble = nn.Linear(1024+256, no_class)
+    
+    def forward(self, x):
+        x1 = self.model_a(x.clone())
+        x1 = x1.view(x1.size(0), -1)
+        x2 = self.model_b(x)
+        x2 = x2.view(x2.size(0), -1)
+        out = torch.cat((x1,x2), dim=1)
+        out = self.relu(out)
+        out = self.ensemble(out)
+        
         return out
     
 if __name__=="__main__":
     from torchsummary import summary
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model=VGG_M(5)
+    no_class = 10
+    model_a = VGG_M(10)
+    model_b = DCASE_PAST(10)
+    model=ENSEMBLE(model_a, model_b, 10)
     model.to(device)
-    print(summary(model, (1,128,313)))
+    print(summary(model, (1,500,513)))
