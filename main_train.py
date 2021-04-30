@@ -104,4 +104,4 @@ results = fit_model_class.train_model(no_epoch=epoch, train_data_engine=train,
 
 print(f'Finished training: \nmodel: {args.network}')
 cfg = vars(train)
-print('\n'.join((f'{item}: {cfg[item]}' for item in cfg if item not in ['data', 'tranform', 'batch_itr'])))
+print('\n'.join((f'{item}: {cfg[item]}' for item in cfg if item not in ['data', 'transform', 'batch_itr'])))
