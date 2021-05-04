@@ -62,7 +62,7 @@ class Fit_Model:
 
         data.shuffle_data()
         print('no of batched', data.no_batches)
-        for i in tqdm(range(data.no_batches)):  # range(train.no_batch)
+        for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(train.no_batch)
             inputs, labels = data.mini_batch()
             labels = labels.long()
             outputs = self.network(inputs)
@@ -101,7 +101,7 @@ class Fit_Model:
 
         data.shuffle_data()
         with torch.no_grad():
-            for i in tqdm(range(data.no_batches)):  # range(valid.no_batch)
+            for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(valid.no_batch)
                 inputs, labels = data.mini_batch()
                 labels = labels.long()
                 outputs = self.network(inputs)

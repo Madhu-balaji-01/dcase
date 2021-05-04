@@ -24,7 +24,7 @@ class Audio_Transform:
         self.n_mels = para['n_mels']
         # self.win_length = para['win_length']
         # self.hop_length = para['hop_length']
-        if self.spectra_type == 'Mel_Spectrum':
+        if self.spectra_type == 'mel_spectrum':
             self.spectrum = self.trans_melspectrogram()
         else:
             self.spectrum = self.trans_spectrogram()

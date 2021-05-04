@@ -7,7 +7,7 @@ import itertools
 from sklearn.metrics import confusion_matrix
 
 from data_engin import Data_Engin
-from models.model import VGG_M, DCASE_PAST, DCASE_PAST2
+from models.model import ENSEMBLE, VGG_M, DCASE_PAST, DCASE_PAST2
 from fit_model import Fit_Model
 
 from tqdm import tqdm
@@ -97,23 +97,26 @@ if __name__ == '__main__':
     no_class = len(classes)
 
     
-    test = Data_Engin(method='pre', mono='mean',
+    test = Data_Engin(method='post', mono='mean',
                    address='./dataset/dcase/evaluation_setup/modify_evaluate.csv',
                    spectra_type='Mel_Spectrum',
                    device=device,
-                   batch_size=64,
+                   batch_size=16,
                    fs=16000,
                    n_fft=1024,
                    n_mels=500)
 
-    network = VGG_M(no_class=no_class)
+    model_a = VGG_M(no_class=no_class)
+    model_b = DCASE_PAST(no_class=no_class)
+    
+    network = ENSEMBLE(model_a=model_a, model_b=model_b, no_class=no_class)
 
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
       network = nn.DataParallel(network, device_ids=[0, 1])
 
     network = network.to(device)
-    network = load_model('./model_zoo/dcase_7/Epoch28-ACCtensor(60.5748).pth', network)
+    network = load_model('/home/audio_server1/intern/dcase/model_zoo/dcase_ensemble_1/VGG_M_DCASE_PAST_Epoch11-Acc69.3007.pth', network)
 
     acc, all_targets, all_predicted = infer(network,test)
 

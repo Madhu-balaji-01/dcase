@@ -1,3 +1,4 @@
+from os import name
 import sys
 
 import torch
@@ -23,9 +24,6 @@ parser.add_argument('--method',
 parser.add_argument('--mono',
                     default = 'mean',
                     help = 'Method to merge channels: [mean, diff]')
-parser.add_argument('--network',
-                    default = 'vgg_m',
-                    help = 'Network to be used: [vgg_m, dcase1, dcase2]')
 parser.add_argument('--epoch',
                     default = 30,
                     help = 'Number of epochs to run.')
@@ -138,18 +136,11 @@ if __name__ == '__main__':
                              valid_addr='./dataset/dcase/evaluation_setup/modify_evaluate.csv')
   
   # --------------------------------------------------------------------------------------------------------- #
-  # load model
-  if args.network == 'vgg_m':
-    model_a =  {'model_a': VGG_M(no_class=trainer.no_class)}
-  elif args.network == 'dcase1':
-    model_a =  {'model_a': DCASE_PAST(no_class=trainer.no_class)}
-  elif args.network == 'dcase2':
-    model_a =  {'model_a': DCASE_PAST2(no_class=trainer.no_class)}
+  # load first model
+  model_a =  {'model_a': VGG_M(no_class=trainer.no_class)}
   network = trainer.get_network('single', models=model_a, multiple_gpu=False)
 
-  trainer.save_model_address = trainer.save_model_address + model_a.__class__.__name__ + '_'
-
-  # train model
+  # train first model
   optimizer = optim.SGD(network.parameters(),
                         lr=trainer.lr,
                         momentum=0.9,
@@ -158,6 +149,53 @@ if __name__ == '__main__':
   trained_models['model_a'] = trainer.fit_and_train(network=network,
                                                     optimizer=optimizer,
                                                     criteria=criteria,
-                                                    save_mode=True)
+                                                    save_mode=False)
   
   trainer.show_model_config(trained_models['model_a'].__class__.__name__)
+  
+  # --------------------------------------------------------------------------------------------------------- #
+  # load second model
+  model_b =  {'model_b': DCASE_PAST2(no_class=trainer.no_class)}
+  network = trainer.get_network('single', models=model_b, multiple_gpu=False)
+
+  # train second model
+  optimizer = optim.SGD(network.parameters(),
+                        lr=trainer.lr,
+                        momentum=0.9,
+                        weight_decay=5e-4)
+  criteria = nn.CrossEntropyLoss()
+  trained_models['model_b'] = trainer.fit_and_train(network=network,
+                                                    optimizer=optimizer,
+                                                    criteria=criteria,
+                                                    save_mode=False)
+  
+  trainer.show_model_config(trained_models['model_b'].__class__.__name__)
+  
+  # --------------------------------------------------------------------------------------------------------- #
+  # freeze the models
+  for model in trained_models.values():
+    for param in model.parameters():
+      param.requires_grad_(False)
+
+  # load ensemble model with trained models
+  network = trainer.get_network('ensemble', models=trained_models, multiple_gpu=True)
+  
+  ensemble_addr = '_'.join([
+    trained_models['model_a'].__class__.__name__,
+    trained_models['model_b'].__class__.__name__,
+    ''
+  ])
+  trainer.save_model_address += ensemble_addr
+
+  # train ensemble model
+  optimizer = optim.SGD(network.parameters(),
+                        lr=trainer.lr,
+                        momentum=0.9,
+                        weight_decay=5e-4)
+  criteria = nn.CrossEntropyLoss()
+  trained_models['ensemble_model'] = trainer.fit_and_train(network=network,
+                                                    optimizer=optimizer,
+                                                    criteria=criteria,
+                                                    save_mode=True)
+  
+  trainer.show_model_config(trained_models['model_b'].__class__.__name__)
