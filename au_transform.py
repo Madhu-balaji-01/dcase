@@ -22,8 +22,8 @@ class Audio_Transform:
         self.time= para['time']
         self.n_fft = para['n_fft']
         self.n_mels = para['n_mels']
-        # self.win_length = para['win_length']
-        # self.hop_length = para['hop_length']
+        self.win_length = para['win_length']
+        self.hop_length = para['hop_length']
         if self.spectra_type == 'mel_spectrum':
             self.spectrum = self.trans_melspectrogram()
         else:
@@ -97,15 +97,15 @@ class Audio_Transform:
 
     def trans_spectrogram(self):
         spectrum = torch_audio.transforms.Spectrogram(n_fft=self.n_fft,
-                                                    #  win_length=self.win_length,
-                                                    #  hop_length=self.hop_length,
+                                                     win_length=self.win_length,
+                                                     hop_length=self.hop_length,
                                                      normalized=True)
         return spectrum
 
     def trans_melspectrogram(self):
         spectrum = torch_audio.transforms.MelSpectrogram(sample_rate=self.fs,
-                                                        # win_length=self.win_length,
-                                                        # hop_length=self.hop_length,
+                                                        win_length=self.win_length,
+                                                        hop_length=self.hop_length,
                                                         n_fft=self.n_fft,
                                                         f_min=0,
                                                         f_max=8000,

@@ -60,6 +60,40 @@ class VGG_M(nn.Module):
         out = self.classifier(out)
         return out
 
+class VGG_M2(nn.Module):
+    def __init__(self, no_class):
+        super(VGG_M2,self).__init__()
+        self.relu = nn.ReLU()
+        self.conv1 = Conv_Layer(1, 96, kernel_size=(7, 7), stride=(2, 2), padding=(1, 1))
+        self.maxpool1 = nn.MaxPool2d(kernel_size=(3,3), stride=(2,2))
+        self.conv2 = Conv_Layer(96, 256, kernel_size=(5, 5), stride=(2, 2), padding=(1, 1))
+        self.maxpool2 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2))
+        self.conv3 = Conv_Layer(256, 512, kernel_size=(3, 3), stride=(1, 1),padding=(1, 1))
+        self.conv4 = Conv_Layer(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv5 = Conv_Layer(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        # self.maxpool5 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2))
+        self.maxpool5 = nn.AdaptiveMaxPool2d((1,1))
+        self.fc6 = nn.Linear(512, 4096)
+        self.fc7 = nn.Linear(4096,4096)
+        self.fc_out = nn.Linear(4096, no_class)
+
+    def forward(self,x):
+        out = self.conv1(x)
+        out = self.maxpool1(out)
+        out = self.conv2(out)
+        out = self.maxpool2(out)
+        out = self.conv3(out)
+        out = self.conv4(out)
+        out = self.conv5(out)
+        out = self.maxpool5(out)
+        out = out.view(out.size(0), -1)
+        out = self.fc6(out)
+        out = self.relu(out)
+        out = self.fc7(out)
+        out = self.relu(out)
+        out = self.fc_out(out)
+        return out
+
 class DCASE_PAST(nn.Module):
     def __init__(self, no_class):
         super(DCASE_PAST,self).__init__()
@@ -118,6 +152,20 @@ class DCASE_PAST2(nn.Module):
         out = self.fc_out(out)
         return out
 
+class DCASE_PAST3(nn.Module):
+    def __init__(self, no_class):
+        super(DCASE_PAST3,self).__init__()
+        self.relu = nn.ReLU()
+        self.maxpool = nn.MaxPool2d(kernel_size=(2,2), stride=(2,2))
+        self.conv1 = Conv_Layer(1, 64, kernel_size=(3,3), stride=(1,1), padding=0)
+        self.conv2 = Conv_Layer(64, 128, kernel_size=(3,3), stride=(1,1), padding=0)
+        self.conv3 = Conv_Layer(128, 256, kernel_size=(3,3), stride=(1,1), padding=0)
+        self.conv4 = Conv_Layer(256, 512, kernel_size=(3,3), stride=(1,1), padding=0)
+        self.conv5 = Conv_Layer(512, 512, kernel_size=(3,3), stride=(1,1), padding=0)
+        self.glbmaxpool = nn.AdaptiveMaxPool2d((1,1))
+        self.fc6 = nn.Linear(512, 256)
+        self.fc_out = nn.Linear(256, no_class)
+
 class ENSEMBLE(nn.Module):
     def __init__(self, model_a, model_b, no_class):
         super(ENSEMBLE, self).__init__()
@@ -146,8 +194,9 @@ if __name__=="__main__":
     from torchsummary import summary
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     no_class = 10
-    model_a = VGG_M(10)
-    model_b = DCASE_PAST(10)
-    model=ENSEMBLE(model_a, model_b, 10)
+    # model_a = VGG_M(10)
+    # model_b = DCASE_PAST(10)
+    # model=ENSEMBLE(model_a, model_b, 10)
+    model = VGG_M2(no_class)
     model.to(device)
-    print(summary(model, (1,500,513)))
+    print(summary(model, (1,128,157)))

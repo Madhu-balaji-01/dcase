@@ -198,4 +198,4 @@ if __name__ == '__main__':
                                                     criteria=criteria,
                                                     save_mode=True)
   
-  trainer.show_model_config(trained_models['model_b'].__class__.__name__)
+  trainer.show_model_config(trained_models['ensemble_model'].__class__.__name__)
