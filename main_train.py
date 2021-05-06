@@ -35,6 +35,12 @@ parser.add_argument('--batch_size',
 parser.add_argument('--n_mels',
                     default = 128,
                     help = 'Number of mel features to extract.')
+parser.add_argument('--win_len',
+                    default = 1024,
+                    help = 'Window length to be used.')
+parser.add_argument('--hop_len',
+                    default = 102,
+                    help = 'Hop length to be used.')
 
 args = parser.parse_args()
 
@@ -129,12 +135,12 @@ if __name__ == '__main__':
     'mono': args.mono,
     'spectra_type': args.spectra,
     'batch_size': int(args.batch_size),
-    'fs': 16000,
-    'n_fft': 1024,
+    'fs': 48000,
+    'n_fft': int(args.win_len),
     'n_mels': int(args.n_mels),
     'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-    'win_len': 1024,
-    'hop_len': 102
+    'win_len': int(args.win_len),
+    'hop_len': int(args.hop_len)
   }
   trained_models = dict()
   

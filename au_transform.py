@@ -3,7 +3,6 @@ from torch import tensor
 from torchvision import transforms
 import torchaudio as torch_audio
 import matplotlib.pyplot as plt
-import time
 
 class Audio_Transform:
 
@@ -57,15 +56,13 @@ class Audio_Transform:
     def rawau_to_tensor(self, raw_au_dict):
 
         ip = torch.empty(1, self.time * self.fs)
-        resamp = torch_audio.transforms.Resample(orig_freq=44100, new_freq=self.fs)
+        resamp = torch_audio.transforms.Resample(orig_freq=48000, new_freq=self.fs)
 
         for key in raw_au_dict:
             aud = raw_au_dict[key]
             # resampling of audio data
-            if aud.fs == 44100:
+            if aud.fs == 48000:
                 aud.data = resamp(aud.data)
-            elif aud.fs == 16000:
-                pass
             else:
                 aud.data = torch_audio.transforms.Resample(orig_freq=aud.fs, new_freq=self.fs)(aud.data)
             # fixing audio data size
@@ -191,8 +188,8 @@ if __name__ == '__main__':
     para['fs'] = 48000
     para['time'] = 10
     para['n_fft'] = 2048
-    # para['win_length'] = int(0.05 * 16000)
-    # para['hop_length'] = int(0.02 * 16000)
+    para['win_length'] = int(0.05 * 48000)
+    para['hop_length'] = int(0.02 * 48000)
 
     transform = Audio_Transform(method='post', mono='diff', spectra_type='Mel_Spectrum', device=device, para=para)
 

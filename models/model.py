@@ -177,7 +177,7 @@ class ENSEMBLE(nn.Module):
         
         self.relu = nn.ReLU()
         
-        self.ensemble = nn.Linear(1024+256, no_class)
+        self.ensemble = nn.Linear(4096+256, no_class)
     
     def forward(self, x):
         x1 = self.model_a(x.clone())
@@ -199,4 +199,4 @@ if __name__=="__main__":
     # model=ENSEMBLE(model_a, model_b, 10)
     model = VGG_M2(no_class)
     model.to(device)
-    print(summary(model, (1,128,157)))
+    print(summary(model, (1,128,32)))

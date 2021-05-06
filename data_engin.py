@@ -8,7 +8,7 @@ class Data_Engin:
 
     def __init__(self, method='post', mono='mean', address=None,
                  spectra_type=None, device=None, batch_size=64,
-                 fs=16000, time=1, n_fft = 1024, n_mels=128,
+                 fs=48000, time=1, n_fft = 1024, n_mels=128,
                  win_len=1024, hop_len=512):
         self.method = method
         self.mono = mono
