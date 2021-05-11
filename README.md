@@ -67,15 +67,25 @@ Run the script from terminal
     python main_train.py
 
 optional arguments:
-  * -h, --help  
+  * --help  
     * show this help message and exit  
-  * -sm, --save_model_address  
-    * Path to save models.  
-  * -s, --spectra   
-    * Type of spectrogram: [Mel_Spectrum, Spectrum]  
-  * -me, --method  
+  * --save_model_address  
+    * Path to save models  
+  * --spectra   
+    * Type of spectrogram: [mel_spectrum, spectrum]  
+  * --method  
     * Timing to merge channels: [pre, post]  
-  * -mo, --mono  
+  * --mono  
     * Method to merge channels: [mean, diff]  
-  * -n, --network  
-    * Network to be used: [vgg_m, dcase1, dcase2]
+  * --network  
+    * Network to be used: [vgg_m, vgg_m2, vgg_m3, dcase1, dcase2]
+  * --epoch  
+    * Number of epochs to run  
+  * --batch_size  
+    * Batch size to be used  
+  * --n_mels  
+    * Number of mel features to extract  
+  * --win_len  
+    * Window length to be used  
+  * --hop_len  
+    * Hop length to be used  
