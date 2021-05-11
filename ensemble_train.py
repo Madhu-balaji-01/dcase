@@ -133,7 +133,7 @@ if __name__ == '__main__':
     'mono': args.mono,
     'spectra_type': args.spectra,
     'batch_size': int(args.batch_size),
-    'fs': 16000,
+    'fs': 48000,
     'n_fft': int(args.win_len),
     'n_mels': int(args.n_mels),
     'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
