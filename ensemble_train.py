@@ -167,7 +167,7 @@ if __name__ == '__main__':
   
   # --------------------------------------------------------------------------------------------------------- #
   # load second model
-  model_b =  {'model_b': DCASE_PAST(no_class=trainer.no_class)}
+  model_b =  {'model_b': DCASE_PAST2(no_class=trainer.no_class)}
   network = trainer.get_network('single', models=model_b, multiple_gpu=False)
 
   # train second model

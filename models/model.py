@@ -93,7 +93,39 @@ class VGG_M2(nn.Module):
         out = self.relu(out)
         out = self.fc_out(out)
         return out
+class VGG_M3(nn.Module):
+    def __init__(self, no_class):
+        super(VGG_M3,self).__init__()
+        self.relu = nn.ReLU()
+        self.conv1 = Conv_Layer(1, 96, kernel_size=(7, 7), stride=(2, 2), padding=(1, 1))
+        self.maxpool1 = nn.MaxPool2d(kernel_size=(3,3), stride=(2,2))
+        self.conv2 = Conv_Layer(96, 256, kernel_size=(5, 5), stride=(2, 2), padding=(1, 1))
+        self.maxpool2 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2))
+        self.conv3 = Conv_Layer(256, 512, kernel_size=(3, 3), stride=(1, 1),padding=(1, 1))
+        self.conv4 = Conv_Layer(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv5 = Conv_Layer(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        # self.maxpool5 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2))
+        self.maxpool5 = nn.AdaptiveMaxPool2d((1,1))
+        self.fc6 = nn.Linear(512, 4096)
+        self.fc7 = nn.Linear(4096,1024)
+        self.fc_out = nn.Linear(1024, no_class)
 
+    def forward(self,x):
+        out = self.conv1(x)
+        out = self.maxpool1(out)
+        out = self.conv2(out)
+        out = self.maxpool2(out)
+        out = self.conv3(out)
+        out = self.conv4(out)
+        out = self.conv5(out)
+        out = self.maxpool5(out)
+        out = out.view(out.size(0), -1)
+        out = self.fc6(out)
+        out = self.relu(out)
+        out = self.fc7(out)
+        out = self.relu(out)
+        out = self.fc_out(out)
+        return out
 class DCASE_PAST(nn.Module):
     def __init__(self, no_class):
         super(DCASE_PAST,self).__init__()
@@ -152,19 +184,36 @@ class DCASE_PAST2(nn.Module):
         out = self.fc_out(out)
         return out
 
-# class DCASE_PAST3(nn.Module):
-#     def __init__(self, no_class):
-#         super(DCASE_PAST3,self).__init__()
-#         self.relu = nn.ReLU()
-#         self.maxpool = nn.MaxPool2d(kernel_size=(2,2), stride=(2,2))
-#         self.conv1 = Conv_Layer(1, 64, kernel_size=(3,3), stride=(1,1), padding=0)
-#         self.conv2 = Conv_Layer(64, 128, kernel_size=(3,3), stride=(1,1), padding=0)
-#         self.conv3 = Conv_Layer(128, 256, kernel_size=(3,3), stride=(1,1), padding=0)
-#         self.conv4 = Conv_Layer(256, 512, kernel_size=(3,3), stride=(1,1), padding=0)
-#         self.conv5 = Conv_Layer(512, 512, kernel_size=(3,3), stride=(1,1), padding=0)
-#         self.glbmaxpool = nn.AdaptiveMaxPool2d((1,1))
-#         self.fc6 = nn.Linear(512, 256)
-#         self.fc_out = nn.Linear(256, no_class)
+class Baseline_Block(nn.Module):
+    def __init__(self, ch_in, ch_out):
+        super(Baseline_Block, self).__init__()
+        self.fc = nn.Linear(in_features=ch_in, out_features=ch_out)
+        self.bn = nn.BatchNorm1d(ch_out)
+        self.relu = nn.ReLU()
+        self.drop = nn.Dropout(p=0.2)
+
+    def forward(self, x):
+        x = self.fc(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        x = self.drop(x)
+        return x
+
+class BASELINE(nn.Module):
+    def __init__(self, no_class):
+        super(BASELINE, self).__init__()
+        self.fc1 = Baseline_Block(512, 512)
+        self.fc2 = Baseline_Block(512, 128)
+        self.fc3 = Baseline_Block(128, 64)
+        self.fc_out = Baseline_Block(64, no_class)
+    
+    def forward(self, x):
+        out = self.fc1(x)
+        out = self.fc2(out)
+        out = self.fc3(out)
+        out = self.fc_out(out)
+        
+        return out
 
 class ENSEMBLE(nn.Module):
     def __init__(self, model_a, model_b, no_class):
@@ -178,52 +227,6 @@ class ENSEMBLE(nn.Module):
         self.relu = nn.ReLU()
         
         self.ensemble = nn.Linear(4096+256, no_class)
-    
-    def forward(self, x):
-        x1 = self.model_a(x.clone())
-        x1 = x1.view(x1.size(0), -1)
-        x2 = self.model_b(x)
-        x2 = x2.view(x2.size(0), -1)
-        out = torch.cat((x1,x2), dim=1)
-        out = self.relu(out)
-        out = self.ensemble(out)
-        
-        return out
-class ENSEMBLE2(nn.Module):
-    def __init__(self, model_a, model_b, no_class):
-        super(ENSEMBLE2, self).__init__()
-        self.model_a = model_a
-        self.model_b = model_b
-        
-        self.model_a.fc_out = nn.Identity()
-        self.model_b.fc_out = nn.Identity()
-        
-        self.relu = nn.ReLU()
-        
-        self.ensemble = nn.Linear(4096+4096, no_class)
-    
-    def forward(self, x):
-        x1 = self.model_a(x.clone())
-        x1 = x1.view(x1.size(0), -1)
-        x2 = self.model_b(x)
-        x2 = x2.view(x2.size(0), -1)
-        out = torch.cat((x1,x2), dim=1)
-        out = self.relu(out)
-        out = self.ensemble(out)
-        
-        return out
-class ENSEMBLE3(nn.Module):
-    def __init__(self, model_a, model_b, no_class):
-        super(ENSEMBLE3, self).__init__()
-        self.model_a = model_a
-        self.model_b = model_b
-        
-        self.model_a.fc_out = nn.Identity()
-        self.model_b.fc_out = nn.Identity()
-        
-        self.relu = nn.ReLU()
-        
-        self.ensemble = nn.Linear(256+256, no_class)
     
     def forward(self, x):
         x1 = self.model_a(x.clone())

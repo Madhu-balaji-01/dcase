@@ -7,7 +7,7 @@ import itertools
 from sklearn.metrics import confusion_matrix
 
 from data_engin import Data_Engin
-from models.model import ENSEMBLE, VGG_M, DCASE_PAST, DCASE_PAST2
+from models.model import ENSEMBLE, VGG_M, VGG_M2, DCASE_PAST, DCASE_PAST2
 from fit_model import Fit_Model
 
 from tqdm import tqdm
@@ -92,36 +92,69 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # classes = ['silence', 'clapping', 'laughing', 'scream-shout', 'conversation', 'happy', 'angry']
-    classes = ['airport', 'shopping_mall', 'metro_station', 'street_pedestrian', 'public_square', 'street_traffic', 'tram', 'bus', 'metro', 'park']
+    # classes = ['airport', 'shopping_mall', 'metro_station', 'street_pedestrian', 'public_square', 'street_traffic', 'tram', 'bus', 'metro', 'park']
+    classes = ['airport', 'bus', 'metro', 'metro_station', 'park', 'public_square', 'shopping_mall', 'street_pedestrian', 'street_traffic', 'tram']
     
     no_class = len(classes)
-
     
     test = Data_Engin(method='post', mono='mean',
                    address='./dataset/dcase/evaluation_setup/modify_evaluate.csv',
-                   spectra_type='Mel_Spectrum',
+                   spectra_type='mel_spectrum',
                    device=device,
                    batch_size=16,
-                   fs=16000,
-                   n_fft=1024,
-                   n_mels=500)
+                   fs=48000,
+                   n_fft=2048,
+                   n_mels=128,
+                   win_len=2048,
+                   hop_len=204)
 
-    model_a = DCASE_PAST(no_class=no_class)
-    model_b = DCASE_PAST2(no_class=no_class)
+    # model_a = VGG_M(no_class=no_class)
+    # model_b = DCASE_PAST(no_class=no_class)
     
-    network = ENSEMBLE(model_a=model_a, model_b=model_b, no_class=no_class)
+    # network = ENSEMBLE(model_a=model_a, model_b=model_b, no_class=no_class)
 
+    network = VGG_M2(no_class=no_class)
+    
     if torch.cuda.device_count() > 1:
       print("Let's use", torch.cuda.device_count(), "GPUs!")
       network = nn.DataParallel(network, device_ids=[0, 1])
 
     network = network.to(device)
-    network = load_model('/home/ubuntu/intern/dcase/model_zoo/dcase_ensemble_1/DCASE_PAST_DCASE_PAST2_Epoch19-Acc62.8579.pth', network)
+    network = load_model('/home/audio_server1/intern/dcase/model_zoo/dcase_18/VGG_M2_Epoch13-Acc61.9293.pth', network)
 
     acc, all_targets, all_predicted = infer(network,test)
 
     # Compute confusion matrix
-    matrix = confusion_matrix(all_targets.data.cpu().numpy(), all_predicted.cpu().numpy())
+    targets = all_targets.data.cpu().numpy()
+    predicted = all_predicted.data.cpu().numpy()
+
+    def replace(arr):
+        arr = np.where(arr==1, 16, arr)
+        arr = np.where(arr==2, 13, arr)
+        arr = np.where(arr==3, 17, arr)
+        arr = np.where(arr==4, 15, arr)
+        arr = np.where(arr==5, 18, arr)
+        arr = np.where(arr==6, 19, arr)
+        arr = np.where(arr==7, 11, arr)
+        arr = np.where(arr==8, 12, arr)
+        arr = np.where(arr==9, 14, arr)
+        
+        arr = np.where(arr==11, 1, arr)
+        arr = np.where(arr==12, 2, arr)
+        arr = np.where(arr==13, 3, arr)
+        arr = np.where(arr==14, 4, arr)
+        arr = np.where(arr==15, 5, arr)
+        arr = np.where(arr==16, 6, arr)
+        arr = np.where(arr==17, 7, arr)
+        arr = np.where(arr==18, 8, arr)
+        arr = np.where(arr==19, 9, arr)
+        return arr
+    
+    targets = replace(targets)
+    predicted = replace(predicted)
+        
+    # matrix = confusion_matrix(all_targets.data.cpu().numpy(), all_predicted.cpu().numpy())
+    matrix = confusion_matrix(targets, predicted)
     np.set_printoptions(precision=2)
 
     # Plot normalized confusion matrix
