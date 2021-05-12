@@ -106,8 +106,8 @@ if __name__ == '__main__':
                    n_fft=1024,
                    n_mels=500)
 
-    model_a = VGG_M(no_class=no_class)
-    model_b = DCASE_PAST(no_class=no_class)
+    model_a = DCASE_PAST(no_class=no_class)
+    model_b = DCASE_PAST2(no_class=no_class)
     
     network = ENSEMBLE(model_a=model_a, model_b=model_b, no_class=no_class)
 
@@ -116,7 +116,7 @@ if __name__ == '__main__':
       network = nn.DataParallel(network, device_ids=[0, 1])
 
     network = network.to(device)
-    network = load_model('/home/audio_server1/intern/dcase/model_zoo/dcase_ensemble_1/VGG_M_DCASE_PAST_Epoch11-Acc69.3007.pth', network)
+    network = load_model('/home/ubuntu/intern/dcase/model_zoo/dcase_ensemble_1/DCASE_PAST_DCASE_PAST2_Epoch19-Acc62.8579.pth', network)
 
     acc, all_targets, all_predicted = infer(network,test)
 

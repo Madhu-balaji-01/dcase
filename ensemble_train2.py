@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from data_engin import Data_Engin
-from models.model import ENSEMBLE, VGG_M, DCASE_PAST, DCASE_PAST2
+from models.model import ENSEMBLE, VGG_M, VGG_M2, DCASE_PAST, DCASE_PAST2
 from fit_model import Fit_Model
 
 import argparse
@@ -33,6 +33,12 @@ parser.add_argument('--batch_size',
 parser.add_argument('--n_mels',
                     default = 128,
                     help = 'Number of mel features to extract.')
+parser.add_argument('--win_len',
+                    default = 1024,
+                    help = 'Window length to be used.')
+parser.add_argument('--hop_len',
+                    default = 102,
+                    help = 'Hop length to be used.')
 
 args = parser.parse_args()
 
@@ -57,7 +63,9 @@ class Main_Train:
                       batch_size=self.batch_size,
                       fs=self.fs,
                       n_fft=self.n_fft,
-                      n_mels=self.n_mels)
+                      n_mels=self.n_mels,
+                      win_len=self.win_len,
+                      hop_len=self.hop_len)
 
     self.valid = Data_Engin(method=self.method,
                        mono=self.mono,
@@ -67,7 +75,9 @@ class Main_Train:
                       batch_size=self.batch_size,
                       fs=self.fs,
                       n_fft=self.n_fft,
-                      n_mels=self.n_mels)
+                      n_mels=self.n_mels,
+                      win_len=self.win_len,
+                      hop_len=self.hop_len)
 
   def get_network(self, network_type, models, multiple_gpu=True):
     if network_type == 'single':
@@ -123,10 +133,12 @@ if __name__ == '__main__':
     'mono': args.mono,
     'spectra_type': args.spectra,
     'batch_size': int(args.batch_size),
-    'fs': 16000,
-    'n_fft': 1024,
+    'fs': 48000,
+    'n_fft': int(args.win_len),
     'n_mels': int(args.n_mels),
     'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+    'win_len': int(args.win_len),
+    'hop_len': int(args.hop_len)
   }
   trained_models = dict()
   
@@ -137,7 +149,7 @@ if __name__ == '__main__':
   
   # --------------------------------------------------------------------------------------------------------- #
   # load first model
-  model_a =  {'model_a': VGG_M(no_class=trainer.no_class)}
+  model_a =  {'model_a': VGG_M2(no_class=trainer.no_class)}
   network = trainer.get_network('single', models=model_a, multiple_gpu=False)
 
   # train first model
@@ -198,4 +210,4 @@ if __name__ == '__main__':
                                                     criteria=criteria,
                                                     save_mode=True)
   
-  trainer.show_model_config(trained_models['model_b'].__class__.__name__)
+  trainer.show_model_config(trained_models['ensemble_model'].__class__.__name__)

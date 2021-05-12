@@ -9,8 +9,8 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-i', '--input_path', default='./dataset/audio2/', help='audio files input path')
-parser.add_argument('-o', '--output_path', default='./dataset/audio/', help='audio clip output path')
+parser.add_argument('-i', '--input_path', default='./dataset/dcase/audio2/', help='audio files input path')
+parser.add_argument('-o', '--output_path', default='./dataset/dcase/audio/', help='audio clip output path')
 parser.add_argument('-f', '--file_type', default='wav', help='audio file type')
 parser.add_argument('-l', '--clips_length', default=1, help='length of clips (in seconds)')
 

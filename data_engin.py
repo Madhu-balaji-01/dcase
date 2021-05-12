@@ -8,8 +8,8 @@ class Data_Engin:
 
     def __init__(self, method='post', mono='mean', address=None,
                  spectra_type=None, device=None, batch_size=64,
-                 fs=16000, time=10, n_fft = 1024, n_mels=128,
-                 win_len=0.05, hop_len=0.02):
+                 fs=48000, time=1, n_fft = 1024, n_mels=128,
+                 win_len=1024, hop_len=512):
         self.method = method
         self.mono = mono
         self.data_address = address
@@ -22,8 +22,8 @@ class Data_Engin:
         self.para['time'] = time
         self.para['n_fft'] = n_fft
         self.para['n_mels'] = n_mels
-        # self.para['win_length'] = int(win_len * fs)
-        # self.para['hop_length'] = int(hop_len * fs)
+        self.para['win_length'] = win_len
+        self.para['hop_length'] = hop_len
 
         self.transform = Audio_Transform(method=self.method,
                                          mono=self.mono,
