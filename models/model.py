@@ -3,6 +3,7 @@ import torch.nn as nn
 # import torch.nn.functional as F
 import torch
 from torchsummary import summary
+import numpy as np
 
 class Conv_Layer(nn.Module):
     def __init__(self,ch_in, ch_out, kernel_size, stride, padding):
@@ -93,6 +94,77 @@ class VGG_M2(nn.Module):
         out = self.relu(out)
         out = self.fc_out(out)
         return out
+    
+# class VGG_M2_mixup(nn.Module):
+#     def __init__(self, no_class):
+#         super(VGG_M2,self).__init__()
+#         self.relu = nn.ReLU()
+#         self.conv1 = Conv_Layer(1, 96, kernel_size=(7, 7), stride=(2, 2), padding=(1, 1))
+#         self.maxpool1 = nn.MaxPool2d(kernel_size=(3,3), stride=(2,2))
+#         self.conv2 = Conv_Layer(96, 256, kernel_size=(5, 5), stride=(2, 2), padding=(1, 1))
+#         self.maxpool2 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2))
+#         self.conv3 = Conv_Layer(256, 512, kernel_size=(3, 3), stride=(1, 1),padding=(1, 1))
+#         self.conv4 = Conv_Layer(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+#         self.conv5 = Conv_Layer(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+#         # self.maxpool5 = nn.MaxPool2d(kernel_size=(3, 3), stride=(2, 2))
+#         self.maxpool5 = nn.AdaptiveMaxPool2d((1,1))
+#         self.fc6 = nn.Linear(512, 4096)
+#         self.fc7 = nn.Linear(4096,4096)
+#         self.fc_out = nn.Linear(4096, no_class)
+
+#     def mixup(x, shuffle, lam, i, j):
+#         if shuffle is not None and lam is not None and i == j:
+#             x = lam * x + (1 - lam) * x[shuffle]
+#         return x
+    
+#     def forward(self,x):
+#         if isinstance(x, list):
+#             x, shuffle, lam = x
+#         else:
+#             shuffle = None
+#             lam = None
+        
+#         # Decide which layer to mixup
+#         j = np.random.randint(15)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.conv1(x)
+        
+#         x = self.maxpool1(x)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.conv2(x)
+        
+#         x = self.maxpool2(x)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.conv3(x)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.conv4(x)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.conv5(x)
+        
+#         x = self.maxpool5(x)
+#         x = x.view(x.size(0), -1)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.fc6(x)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.relu(x)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.fc7(x)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         x = self.relu(x)
+        
+#         x = self.mixup(x, shuffle, lam, 0, j)
+#         out = self.fc_out(x)
+#         return out
+    
 class VGG_M3(nn.Module):
     def __init__(self, no_class):
         super(VGG_M3,self).__init__()

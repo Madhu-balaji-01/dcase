@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import optimizer
 from data_engin import Data_Engin
-from models.model import BASELINE, ENSEMBLE, VGG_M, VGG_M2, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE
+from models.model import BASELINE, ENSEMBLE, VGG_M, VGG_M2, VGG_M2_mixup, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE
 from fit_model import Fit_Model
 
 import argparse
@@ -42,6 +42,12 @@ parser.add_argument('--win_len',
 parser.add_argument('--hop_len',
                     default = 102,
                     help = 'Hop length to be used.')
+parser.add_argument('--alpha',
+                    default= 0,
+                    help= 'Alpha for mixup data augmentation. Set to zero if mixup is not desired.')
+parser.add_argument('--spec_aug',
+                    default=False,
+                    help= 'Augments the melspectrogram through time warping, freq masking, followed by time masking.')
 
 args = parser.parse_args()
 
@@ -68,7 +74,9 @@ class Main_Train:
                       n_fft=self.n_fft,
                       n_mels=self.n_mels,
                       win_len=self.win_len,
-                      hop_len=self.hop_len)
+                      hop_len=self.hop_len,
+                      alpha = self.alpha,
+                      spec_aug= self.spec_aug)
 
     self.valid = Data_Engin(method=self.method,
                        mono=self.mono,
@@ -141,7 +149,9 @@ if __name__ == '__main__':
     'n_mels': int(args.n_mels),
     'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
     'win_len': int(args.win_len),
-    'hop_len': int(args.hop_len)
+    'hop_len': int(args.hop_len),
+    'alpha': float(args.alpha),
+    'spec_aug': args.spec_aug
   }
   trained_models = dict()
   
@@ -164,6 +174,7 @@ if __name__ == '__main__':
     model_a =  {'model_a': DCASE_PAST2(no_class=trainer.no_class)}
   elif args.network == 'baseline':
     model_a =  {'model_a': BASELINE(no_class=trainer.no_class)}
+
   network = trainer.get_network('single', models=model_a, multiple_gpu=True)
 
   trainer.save_model_address = trainer.save_model_address + model_a['model_a'].__class__.__name__ + '_'
