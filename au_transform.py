@@ -3,7 +3,7 @@ from torch import tensor
 from torchvision import transforms
 import torchaudio as torch_audio
 import matplotlib.pyplot as plt
-
+from SpecAugment import spec_augment_pytorch
 class Audio_Transform:
 
     class DataNode:
@@ -12,7 +12,7 @@ class Audio_Transform:
             self.fs = fs
             self.time = time
 
-    def __init__(self, method='post', mono='mean', spectra_type=None, device=None, para=None):
+    def __init__(self, method='post', mono='mean', spectra_type=None, device=None, para=None, spec_aug = False):
         self.method = method
         self.mono = mono
         self.spectra_type = spectra_type
@@ -29,7 +29,10 @@ class Audio_Transform:
             self.spectrum = self.trans_spectrogram()
         self.am_to_db = self.trans_am_to_db()
         self.au_to_img = self.trans_autoimg()
-
+        
+        # SpecAugment
+        self.spec_aug = spec_aug
+        
         torch_audio.set_audio_backend(backend="sox_io")
         self.spectrum = self.spectrum.to(self.device)
         self.am_to_db = self.am_to_db.to(self.device)
@@ -111,6 +114,10 @@ class Audio_Transform:
 
         return spectrum
 
+    def augment_spec(self, melspectrogram):
+        augmented_spec = spec_augment_pytorch.spec_augment(melspectrogram)
+        return augmented_spec
+    
     def trans_am_to_db(self):
         return torch_audio.transforms.AmplitudeToDB()
 
@@ -159,6 +166,10 @@ class Audio_Transform:
 
         # process in gpu
         spectra = self.spectrum(ip_norm)
+        
+        if self.spec_aug:
+            spectra = self.augment_spec(spectra)
+            
         spectra_db = self.am_to_db(spectra)
         spectra_db_norm = self.normalize_spectra(spectra_db)
         if self.method == 'post':
@@ -168,13 +179,12 @@ class Audio_Transform:
             elif self.mono == 'diff':
                 spectra_db_norm = (spectra_db_norm2[0] - spectra_db_norm2[1])/2
         spectra_img = self.audio_to_img(spectra_db_norm)
-
+        
         # send the data to gpu
         spectra_img = spectra_img.to(self.device, dtype=torch.float32)
         spectra_img = spectra_img[:,None,:,:]
 
         label = self.label_to_torch(labels)
-        
         
         return spectra_img, label
 

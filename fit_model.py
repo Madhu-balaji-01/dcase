@@ -51,7 +51,6 @@ class Fit_Model:
         self.best_acc = valid_acc
 
     def train_process(self, epoch, train_data_engine):
-
         self.network = self.network.train()
         self.lr_rate_setting(epoch)
         data = train_data_engine
@@ -64,6 +63,7 @@ class Fit_Model:
         print('no of batched', data.no_batches)
         for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(train.no_batch)
             inputs, labels = data.mini_batch()
+            
             labels = labels.long()
             outputs = self.network(inputs)
 

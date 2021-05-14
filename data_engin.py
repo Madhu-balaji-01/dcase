@@ -1,4 +1,5 @@
 from au_transform import Audio_Transform
+import numpy as np
 import pandas as pd
 import random
 import torch
@@ -9,7 +10,7 @@ class Data_Engin:
     def __init__(self, method='post', mono='mean', address=None,
                  spectra_type=None, device=None, batch_size=64,
                  fs=48000, time=1, n_fft = 1024, n_mels=128,
-                 win_len=1024, hop_len=512):
+                 win_len=1024, hop_len=512, alpha = 0, spec_aug = False):
         self.method = method
         self.mono = mono
         self.data_address = address
@@ -17,7 +18,13 @@ class Data_Engin:
         self.batch_size = batch_size
         self.spectra_type = spectra_type
         self.para = {}
-
+        
+        # Mixup
+        self.alpha = alpha
+        
+        # SpecAug
+        self.spec_aug = spec_aug
+        
         self.para['fs'] = fs
         self.para['time'] = time
         self.para['n_fft'] = n_fft
@@ -29,7 +36,8 @@ class Data_Engin:
                                          mono=self.mono,
                                          spectra_type=self.spectra_type,
                                          device=self.device,
-                                         para=self.para)
+                                         para=self.para,
+                                         spec_aug=self.spec_aug)
 
         self.data = self.read_csv()
         self.no_batches = math.floor(len(self.data)/self.batch_size)
@@ -62,7 +70,19 @@ class Data_Engin:
         label = [self.data[i][1] for i in range(start,end)]
 
         x, y = self.transform.main(aud_list,label)
+        
+        # Mixup
+        if (self.alpha != 0):
+            x,y = self.mixup(x,y,self.alpha)
+            
         return x, y
+    
+    def mixup(self, x,y,alpha):
+        lam = np.random.beta(alpha, alpha)
+        shuffle = torch.randperm(x.shape[0])
+        x = lam * x + (1 - lam) * x[shuffle]
+        y = lam * y+ (1 - lam) * y[shuffle]
+        return x,y
 
 
 if __name__ == '__main__':

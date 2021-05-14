@@ -1,11 +1,11 @@
+from os import name
 import sys
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.optim import optimizer
 from data_engin import Data_Engin
-from models.model import BASELINE, ENSEMBLE, VGG_M, VGG_M2, VGG_M2_mixup, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE
+from models.model import ENSEMBLE, ENSEMBLE2, ENSEMBLE3, VGG_M, VGG_M2, DCASE_PAST, DCASE_PAST2
 from fit_model import Fit_Model
 
 import argparse
@@ -24,9 +24,6 @@ parser.add_argument('--method',
 parser.add_argument('--mono',
                     default = 'mean',
                     help = 'Method to merge channels: [mean, diff]')
-parser.add_argument('--network',
-                    default = 'vgg_m3',
-                    help = 'Network to be used: [vgg_m, vgg_m2, vgg_m3, dcase1, dcase2, baseline]')
 parser.add_argument('--epoch',
                     default = 30,
                     help = 'Number of epochs to run.')
@@ -42,12 +39,6 @@ parser.add_argument('--win_len',
 parser.add_argument('--hop_len',
                     default = 102,
                     help = 'Hop length to be used.')
-parser.add_argument('--alpha',
-                    default= 0,
-                    help= 'Alpha for mixup data augmentation. Set to zero if mixup is not desired.')
-parser.add_argument('--spec_aug',
-                    default=False,
-                    help= 'Augments the melspectrogram through time warping, freq masking, followed by time masking.')
 
 args = parser.parse_args()
 
@@ -74,9 +65,7 @@ class Main_Train:
                       n_fft=self.n_fft,
                       n_mels=self.n_mels,
                       win_len=self.win_len,
-                      hop_len=self.hop_len,
-                      alpha = self.alpha,
-                      spec_aug= self.spec_aug)
+                      hop_len=self.hop_len)
 
     self.valid = Data_Engin(method=self.method,
                        mono=self.mono,
@@ -95,7 +84,7 @@ class Main_Train:
       network = next(iter(models.values()))
       
     elif network_type == 'ensemble':
-      network = ENSEMBLE(model_a=models['model_a'],
+      network = ENSEMBLE3(model_a=models['model_a'],
                          model_b=models['model_b'],
                          no_class=self.no_class)
 
@@ -141,7 +130,7 @@ if __name__ == '__main__':
                 'learning_rate_decay_rate': 0.9
                 },
     'method': args.method,
-    'mono': args.mono,
+    'mono': 'mean',
     'spectra_type': args.spectra,
     'batch_size': int(args.batch_size),
     'fs': 48000,
@@ -149,9 +138,28 @@ if __name__ == '__main__':
     'n_mels': int(args.n_mels),
     'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
     'win_len': int(args.win_len),
-    'hop_len': int(args.hop_len),
-    'alpha': float(args.alpha),
-    'spec_aug': args.spec_aug
+    'hop_len': int(args.hop_len)
+  }
+  attr2 = {
+    'save_model_address': args.save_model_address,
+    'no_class': 10,
+    'epoch': int(args.epoch),
+    'lr': 0.0001,
+    'lr_state': {'lr': 0.0001,
+                'learning_rate_decay_start': 10,
+                'learning_rate_decay_every': 3,
+                'learning_rate_decay_rate': 0.9
+                },
+    'method': args.method,
+    'mono': 'diff',
+    'spectra_type': args.spectra,
+    'batch_size': int(args.batch_size),
+    'fs': 48000,
+    'n_fft': int(args.win_len),
+    'n_mels': int(args.n_mels),
+    'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+    'win_len': int(args.win_len),
+    'hop_len': int(args.hop_len)
   }
   trained_models = dict()
   
@@ -159,38 +167,71 @@ if __name__ == '__main__':
   trainer = Main_Train(attr=attr)
   trainer.load_data_engin(train_addr='./dataset/dcase/evaluation_setup/modify_train.csv',
                              valid_addr='./dataset/dcase/evaluation_setup/modify_evaluate.csv')
+  trainer2 = Main_Train(attr=attr2)
+  trainer2.load_data_engin(train_addr='./dataset/dcase/evaluation_setup/modify_train.csv',
+                             valid_addr='./dataset/dcase/evaluation_setup/modify_evaluate.csv')
   
   # --------------------------------------------------------------------------------------------------------- #
-  # load model
-  if args.network == 'vgg_m':
-    model_a =  {'model_a': VGG_M(no_class=trainer.no_class)}
-  elif args.network == 'vgg_m2':
-    model_a =  {'model_a': VGG_M2(no_class=trainer.no_class)}
-  elif args.network == 'vgg_m3':
-    model_a =  {'model_a': VGG_M3(no_class=trainer.no_class)}
-  elif args.network == 'dcase1':
-    model_a =  {'model_a': DCASE_PAST(no_class=trainer.no_class)}
-  elif args.network == 'dcase2':
-    model_a =  {'model_a': DCASE_PAST2(no_class=trainer.no_class)}
-  elif args.network == 'baseline':
-    model_a =  {'model_a': BASELINE(no_class=trainer.no_class)}
+  # load first model
+  model_a =  {'model_a': DCASE_PAST2(no_class=trainer.no_class)}
+  network = trainer.get_network('single', models=model_a, multiple_gpu=False)
 
-  network = trainer.get_network('single', models=model_a, multiple_gpu=True)
-
-  trainer.save_model_address = trainer.save_model_address + model_a['model_a'].__class__.__name__ + '_'
-
-  # train model
+  # train first model
   optimizer = optim.SGD(network.parameters(),
                         lr=trainer.lr,
                         momentum=0.9,
                         weight_decay=5e-4)
-  # optimizer = optim.Adam(network.parameters(),
-  #                        lr=trainer.lr,
-  #                        weight_decay=0.0001)
   criteria = nn.CrossEntropyLoss()
   trained_models['model_a'] = trainer.fit_and_train(network=network,
                                                     optimizer=optimizer,
                                                     criteria=criteria,
-                                                    save_mode=True)
+                                                    save_mode=False)
   
   trainer.show_model_config(trained_models['model_a'].__class__.__name__)
+  
+  # --------------------------------------------------------------------------------------------------------- #
+  # load second model
+  model_b =  {'model_b': DCASE_PAST2(no_class=trainer2.no_class)}
+  network = trainer2.get_network('single', models=model_b, multiple_gpu=False)
+
+  # train second model
+  optimizer = optim.SGD(network.parameters(),
+                        lr=trainer2.lr,
+                        momentum=0.9,
+                        weight_decay=5e-4)
+  criteria = nn.CrossEntropyLoss()
+  trained_models['model_b'] = trainer2.fit_and_train(network=network,
+                                                    optimizer=optimizer,
+                                                    criteria=criteria,
+                                                    save_mode=False)
+  
+  trainer2.show_model_config(trained_models['model_b'].__class__.__name__)
+  
+  # --------------------------------------------------------------------------------------------------------- #
+  # freeze the models
+  for model in trained_models.values():
+    for param in model.parameters():
+      param.requires_grad_(False)
+
+  # load ensemble model with trained models
+  network = trainer.get_network('ensemble', models=trained_models, multiple_gpu=True)
+  
+  ensemble_addr = '_'.join([
+    trained_models['model_a'].__class__.__name__,
+    trained_models['model_b'].__class__.__name__,
+    ''
+  ])
+  trainer.save_model_address += ensemble_addr
+
+  # train ensemble model
+  optimizer = optim.SGD(network.parameters(),
+                        lr=trainer.lr,
+                        momentum=0.9,
+                        weight_decay=5e-4)
+  criteria = nn.CrossEntropyLoss()
+  trained_models['ensemble_model'] = trainer.fit_and_train(network=network,
+                                                    optimizer=optimizer,
+                                                    criteria=criteria,
+                                                    save_mode=True)
+  
+  trainer.show_model_config(trained_models['ensemble_model'].__class__.__name__)
