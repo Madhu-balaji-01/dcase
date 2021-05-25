@@ -120,7 +120,7 @@ if __name__ == '__main__':
       network = nn.DataParallel(network, device_ids=[0, 1])
 
     network = network.to(device)
-    network = load_model('/home/audio_server1/intern/dcase/model_zoo/dcase_18/VGG_M2_Epoch13-Acc61.9293.pth', network)
+    network = load_model('/home/ubuntu/intern/dcase/model_zoo/dcase_8/VGG_M2_Epoch23-Acc34.9621.pth', network)
 
     acc, all_targets, all_predicted = infer(network,test)
 

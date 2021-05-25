@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from data_engin import Data_Engin
-from models.model import ENSEMBLE, VGG_M, VGG_M2, DCASE_PAST, DCASE_PAST2
+from models.model import ENSEMBLE, ENSEMBLE2, ENSEMBLE3, VGG_M, VGG_M2, DCASE_PAST, DCASE_PAST2
 from fit_model import Fit_Model
 
 import argparse
@@ -39,9 +39,6 @@ parser.add_argument('--win_len',
 parser.add_argument('--hop_len',
                     default = 102,
                     help = 'Hop length to be used.')
-parser.add_argument('--alpha',
-                    default= 0,
-                    help= 'Alpha for mixup data augmentation. Set to zero if mixup is not desired.')
 
 args = parser.parse_args()
 
@@ -68,8 +65,7 @@ class Main_Train:
                       n_fft=self.n_fft,
                       n_mels=self.n_mels,
                       win_len=self.win_len,
-                      hop_len=self.hop_len,
-                      alpha = self.alpha)
+                      hop_len=self.hop_len)
 
     self.valid = Data_Engin(method=self.method,
                        mono=self.mono,
@@ -88,7 +84,7 @@ class Main_Train:
       network = next(iter(models.values()))
       
     elif network_type == 'ensemble':
-      network = ENSEMBLE(model_a=models['model_a'],
+      network = ENSEMBLE3(model_a=models['model_a'],
                          model_b=models['model_b'],
                          no_class=self.no_class)
 
@@ -108,8 +104,7 @@ class Main_Train:
                               optimizer=optimizer,
                               criteria=criteria,
                               lr_state=self.lr_state,
-                              save_model_address=self.save_model_address,
-                              alpha = self.alpha)
+                              save_model_address=self.save_model_address)
 
     fit_model_class.train_model(no_epoch=self.epoch, train_data_engine=self.train,
                                 valid_data_engine=self.valid, save_mode=save_mode)
@@ -135,7 +130,7 @@ if __name__ == '__main__':
                 'learning_rate_decay_rate': 0.9
                 },
     'method': args.method,
-    'mono': args.mono,
+    'mono': 'mean',
     'spectra_type': args.spectra,
     'batch_size': int(args.batch_size),
     'fs': 48000,
@@ -143,8 +138,28 @@ if __name__ == '__main__':
     'n_mels': int(args.n_mels),
     'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
     'win_len': int(args.win_len),
-    'hop_len': int(args.hop_len),
-    'alpha': float(args.alpha)
+    'hop_len': int(args.hop_len)
+  }
+  attr2 = {
+    'save_model_address': args.save_model_address,
+    'no_class': 10,
+    'epoch': int(args.epoch),
+    'lr': 0.0001,
+    'lr_state': {'lr': 0.0001,
+                'learning_rate_decay_start': 10,
+                'learning_rate_decay_every': 3,
+                'learning_rate_decay_rate': 0.9
+                },
+    'method': args.method,
+    'mono': 'diff',
+    'spectra_type': args.spectra,
+    'batch_size': int(args.batch_size),
+    'fs': 48000,
+    'n_fft': int(args.win_len),
+    'n_mels': int(args.n_mels),
+    'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+    'win_len': int(args.win_len),
+    'hop_len': int(args.hop_len)
   }
   trained_models = dict()
   
@@ -152,10 +167,13 @@ if __name__ == '__main__':
   trainer = Main_Train(attr=attr)
   trainer.load_data_engin(train_addr='./dataset/dcase/evaluation_setup/modify_train.csv',
                              valid_addr='./dataset/dcase/evaluation_setup/modify_evaluate.csv')
+  trainer2 = Main_Train(attr=attr2)
+  trainer2.load_data_engin(train_addr='./dataset/dcase/evaluation_setup/modify_train.csv',
+                             valid_addr='./dataset/dcase/evaluation_setup/modify_evaluate.csv')
   
   # --------------------------------------------------------------------------------------------------------- #
   # load first model
-  model_a =  {'model_a': DCASE_PAST(no_class=trainer.no_class)}
+  model_a =  {'model_a': DCASE_PAST2(no_class=trainer.no_class)}
   network = trainer.get_network('single', models=model_a, multiple_gpu=False)
 
   # train first model
@@ -173,21 +191,21 @@ if __name__ == '__main__':
   
   # --------------------------------------------------------------------------------------------------------- #
   # load second model
-  model_b =  {'model_b': DCASE_PAST2(no_class=trainer.no_class)}
-  network = trainer.get_network('single', models=model_b, multiple_gpu=False)
+  model_b =  {'model_b': DCASE_PAST2(no_class=trainer2.no_class)}
+  network = trainer2.get_network('single', models=model_b, multiple_gpu=False)
 
   # train second model
   optimizer = optim.SGD(network.parameters(),
-                        lr=trainer.lr,
+                        lr=trainer2.lr,
                         momentum=0.9,
                         weight_decay=5e-4)
   criteria = nn.CrossEntropyLoss()
-  trained_models['model_b'] = trainer.fit_and_train(network=network,
+  trained_models['model_b'] = trainer2.fit_and_train(network=network,
                                                     optimizer=optimizer,
                                                     criteria=criteria,
                                                     save_mode=False)
   
-  trainer.show_model_config(trained_models['model_b'].__class__.__name__)
+  trainer2.show_model_config(trained_models['model_b'].__class__.__name__)
   
   # --------------------------------------------------------------------------------------------------------- #
   # freeze the models

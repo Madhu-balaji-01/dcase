@@ -1,9 +1,13 @@
 import torch
+import librosa
+import random
+import numpy as np
 from torch import tensor
 from torchvision import transforms
 import torchaudio as torch_audio
 import matplotlib.pyplot as plt
-
+from spec_augment import Spec_Augment
+ 
 class Audio_Transform:
 
     class DataNode:
@@ -12,7 +16,7 @@ class Audio_Transform:
             self.fs = fs
             self.time = time
 
-    def __init__(self, method='post', mono='mean', spectra_type=None, device=None, para=None):
+    def __init__(self, method='post', mono='mean', spectra_type=None, device=None, para=None, spec_aug = False, manipulate= False):
         self.method = method
         self.mono = mono
         self.spectra_type = spectra_type
@@ -29,7 +33,13 @@ class Audio_Transform:
             self.spectrum = self.trans_spectrogram()
         self.am_to_db = self.trans_am_to_db()
         self.au_to_img = self.trans_autoimg()
-
+        
+        # SpecAugment
+        self.spec_aug = spec_aug
+        
+        # Audio manipulation
+        self.manipulate = manipulate
+        
         torch_audio.set_audio_backend(backend="sox_io")
         self.spectrum = self.spectrum.to(self.device)
         self.am_to_db = self.am_to_db.to(self.device)
@@ -38,20 +48,83 @@ class Audio_Transform:
         raw_au_dict = {}
         labels = []
         for i, file in enumerate(filename_list):
-            try:
-                ip, fs = torch_audio.load(file)
-                if self.method == 'pre':
-                    if self.mono == 'mean':
-                        ip = torch.mean(ip, dim=0, keepdim=True)
-                    elif self.mono == 'diff':
-                        ip = (ip[0] - ip[1])/2
-                        ip = ip.view(1,-1)
-                raw_au_dict[str(i)] = self.DataNode(ip, fs, ip.shape[1] / fs)
-                labels.append(label_list[i])
-            except:
-                print('audio not loaded', file)
-                pass
+            
+            ip, fs = torch_audio.load(file)
+            if self.manipulate:
+                choice = random.choice([self.add_noise, self.pitch_shift, self.time_stretch, self.shift])
+                # print('applying ', choice)
+                ip = choice(ip)
+            if self.method == 'pre':
+                if self.mono == 'mean':
+                    ip = torch.mean(ip, dim=0, keepdim=True)
+                elif self.mono == 'diff':
+                    ip = (ip[0] - ip[1])/2
+                    ip = ip.view(1,-1)
+            raw_au_dict[str(i)] = self.DataNode(ip, fs, ip.shape[1] / fs)
+            labels.append(label_list[i])
+            # except:
+            #     print('audio not loaded', file)
+            #     pass
         return raw_au_dict, labels
+    
+    def add_noise(self, data):
+        # snr_db = random.randint(1,20)
+        # speech_power = data.norm(p=2)
+        # noise_tensor = torch.from_numpy(noise)
+        # noise_power = noise_tensor.norm(p=2)
+        # snr = np.exp(snr_db / 10)
+        # scale = snr * noise_power / speech_power
+        # noisy_speech = (scale * data + noise_tensor) / 2
+        
+        noise = np.random.normal(size=data.shape)
+        augmented_data = data + 0.01 * noise
+        # Cast back to same data type
+        # augmented_data = torch.from_numpy(augmented_data)
+        return augmented_data
+    
+    def shift(self, data):
+        shift = np.random.randint(self.fs * 0.5)
+        direction = np.random.randint(0, 2)
+        if direction == 1:
+            shift = -shift 
+            
+        augmented_data = np.roll(data, shift)
+        # Set to silence for heading/ tailing
+        if shift > 0:
+            augmented_data[:shift] = 0
+        else:
+            augmented_data[shift:] = 0
+        augmented_data = torch.from_numpy(augmented_data)
+        return augmented_data
+    
+    def pitch_shift(self, data):
+        p = random.uniform(2,10)
+        effects = [
+        ['gain', '-n'],  # normalises to 0dB
+        ['pitch', f"{p}"],   # 5 cent pitch shift
+        ['rate', f"{self.fs}"]
+        ]
+        waveform2, sample_rate2 = torch_audio.sox_effects.apply_effects_tensor(data, self.fs, effects)
+        self.fs = sample_rate2
+        return waveform2
+          
+    
+    def time_stretch(self, data):
+        s = random.uniform(0.1,3)
+        # Define effects
+        effects = [
+        ["lowpass", "-1", "300"], # apply single-pole lowpass filter
+        ["speed", f"{s}"],  # reduce the speed
+                            # This only changes sample rate, so it is necessary to
+                            # add `rate` effect with original sample rate after this.
+        ["rate", f"{self.fs}"],
+        ["reverb", "-w"],  # Reverbration gives some dramatic feeling
+        ]
+
+        # Apply effects
+        waveform2, sample_rate2 = torch_audio.sox_effects.apply_effects_tensor(data, self.fs, effects)
+        self.fs = sample_rate2
+        return waveform2
 
     def rawau_to_tensor(self, raw_au_dict):
 
@@ -96,7 +169,10 @@ class Audio_Transform:
         spectrum = torch_audio.transforms.Spectrogram(n_fft=self.n_fft,
                                                      win_length=self.win_length,
                                                      hop_length=self.hop_length,
-                                                     normalized=True)
+                                                     
+                                                     center=True,
+                                                     pad_mode="reflect",
+                                                     power = 2.0)
         return spectrum
 
     def trans_melspectrogram(self):
@@ -107,10 +183,18 @@ class Audio_Transform:
                                                         f_min=0,
                                                         f_max=8000,
                                                         n_mels=self.n_mels,
-                                                        normalized=True)
+                                                        normalized=True,
+                                                        center=True,
+                                                        pad_mode="reflect",
+                                                        power = 2.0)
 
         return spectrum
 
+    def augment_spec(self, melspectrogram):
+        augmented_spec = Spec_Augment()
+        new_spec = augmented_spec.main(melspectrogram)
+        return new_spec
+    
     def trans_am_to_db(self):
         return torch_audio.transforms.AmplitudeToDB()
 
@@ -135,6 +219,7 @@ class Audio_Transform:
                 img = temp
             else:
                 temp = self.au_to_img(spectra[i, :, :])
+                
                 img = torch.vstack((img, temp))
         # img_trans = img[:, None, :, :]
         return img
@@ -159,6 +244,7 @@ class Audio_Transform:
 
         # process in gpu
         spectra = self.spectrum(ip_norm)
+            
         spectra_db = self.am_to_db(spectra)
         spectra_db_norm = self.normalize_spectra(spectra_db)
         if self.method == 'post':
@@ -168,13 +254,12 @@ class Audio_Transform:
             elif self.mono == 'diff':
                 spectra_db_norm = (spectra_db_norm2[0] - spectra_db_norm2[1])/2
         spectra_img = self.audio_to_img(spectra_db_norm)
-
+        
         # send the data to gpu
         spectra_img = spectra_img.to(self.device, dtype=torch.float32)
         spectra_img = spectra_img[:,None,:,:]
 
         label = self.label_to_torch(labels)
-        
         
         return spectra_img, label
 
@@ -194,5 +279,3 @@ if __name__ == '__main__':
     transform = Audio_Transform(method='post', mono='diff', spectra_type='Mel_Spectrum', device=device, para=para)
 
     x, y = transform.main(filename_list, label_list)
-    
-    
