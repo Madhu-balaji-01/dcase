@@ -274,17 +274,37 @@ class Baseline_Block(nn.Module):
 class BASELINE(nn.Module):
     def __init__(self, no_class):
         super(BASELINE, self).__init__()
-        self.fc1 = Baseline_Block(512, 512)
-        self.fc2 = Baseline_Block(512, 128)
-        self.fc3 = Baseline_Block(128, 64)
-        self.fc_out = Baseline_Block(64, no_class)
+        self.model = nn.Sequential(
+          nn.Linear(512,512),
+          nn.BatchNorm1d(512),
+          nn.ReLU(),
+          nn.Dropout(p=0.2),
+          nn.Linear(512,128),
+          nn.BatchNorm1d(128),
+          nn.ReLU(),
+          nn.Dropout(p=0.2),
+
+          nn.Linear(128,64),
+          nn.BatchNorm1d(64),
+          nn.ReLU(),
+          nn.Dropout(p=0.2),
+
+          nn.Linear(64,self.num_classes)
+
+        )
+        
+        
+        # self.fc1 = Baseline_Block(512, 512)
+        # self.fc2 = Baseline_Block(512, 128)
+        # self.fc3 = Baseline_Block(128, 64)
+        # self.fc_out = nn.Linear(64, no_class)
     
     def forward(self, x):
-        out = self.fc1(x)
-        out = self.fc2(out)
-        out = self.fc3(out)
-        out = self.fc_out(out)
-        
+        # out = self.fc1(x)
+        # out = self.fc2(out)
+        # out = self.fc3(out)
+        # out = self.fc_out(out)
+        out = self.model(x)
         return out
 
 class ENSEMBLE(nn.Module):

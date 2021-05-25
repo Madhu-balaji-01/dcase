@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import optimizer
 from data_engin import Data_Engin
-from models.model import BASELINE, ENSEMBLE, VGG_M, VGG_M2, VGG_M2_mixup, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE
+from models.model import BASELINE, ENSEMBLE, VGG_M, VGG_M2, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE
 from fit_model import Fit_Model
 
 import argparse
@@ -48,6 +48,9 @@ parser.add_argument('--alpha',
 parser.add_argument('--spec_aug',
                     default=False,
                     help= 'Augments the melspectrogram through time warping, freq masking, followed by time masking.')
+parser.add_argument('--manipulate',
+                    default=False,
+                    help = 'Apply audio manipulation methods.')
 
 args = parser.parse_args()
 
@@ -61,6 +64,7 @@ class Main_Train:
   
   def load_data_engin(self, train_addr, valid_addr):
     torch.cuda.empty_cache()
+    
     self.train_addr = train_addr
     self.valid_addr = valid_addr
 
@@ -76,7 +80,8 @@ class Main_Train:
                       win_len=self.win_len,
                       hop_len=self.hop_len,
                       alpha = self.alpha,
-                      spec_aug= self.spec_aug)
+                      spec_aug= self.spec_aug,
+                      manipulate= self.manipulate)
 
     self.valid = Data_Engin(method=self.method,
                        mono=self.mono,
@@ -115,7 +120,8 @@ class Main_Train:
                               optimizer=optimizer,
                               criteria=criteria,
                               lr_state=self.lr_state,
-                              save_model_address=self.save_model_address)
+                              save_model_address=self.save_model_address,
+                              alpha = self.alpha)
 
     fit_model_class.train_model(no_epoch=self.epoch, train_data_engine=self.train,
                                 valid_data_engine=self.valid, save_mode=save_mode)
@@ -151,7 +157,8 @@ if __name__ == '__main__':
     'win_len': int(args.win_len),
     'hop_len': int(args.hop_len),
     'alpha': float(args.alpha),
-    'spec_aug': args.spec_aug
+    'spec_aug': args.spec_aug,
+    'manipulate': args.manipulate
   }
   trained_models = dict()
   

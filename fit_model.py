@@ -1,12 +1,13 @@
 import torch
 import numpy as np
+from torch.autograd import Variable
 from tqdm import tqdm
 
 class Fit_Model:
 
     def __init__(self, network, device,
                  lr_state, optimizer,
-                 criteria, save_model_address=None):
+                 criteria, save_model_address=None, alpha = 0):
 
         self.network = network
         self.device = device
@@ -15,6 +16,7 @@ class Fit_Model:
         self.lr_state = lr_state
         self.save_model_address = save_model_address
 
+        self.alpha = alpha 
         self.pretrained_epoch = None
         self.pretrained_valid_acc = None
 
@@ -35,6 +37,10 @@ class Fit_Model:
             self.__set_lr(self.optimizer, self.current_lr)  # set the decayed rate
         else:
             self.current_lr = self.lr_state['lr']
+    
+    def mixup_criterion(self, pred, y_a, y_b, lam):
+        mixup_loss = lam * self.criteria(pred, y_a) + (1 - lam) * self.criteria(pred, y_b)
+        return mixup_loss
 
     def save_model(self, epoch ,valid_acc, valid_loss):
         model_name_save = '{}Epoch{}-Acc{}.pth'.format(self.save_model_address,
@@ -63,12 +69,11 @@ class Fit_Model:
         print('no of batched', data.no_batches)
         for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(train.no_batch)
             inputs, labels = data.mini_batch()
-            
             labels = labels.long()
             outputs = self.network(inputs)
-
-            self.optimizer.zero_grad()
             loss = self.criteria(outputs, labels)
+            
+            self.optimizer.zero_grad() 
             loss.backward()
             self.__clip_gradient(self.optimizer, 0.1)
             self.optimizer.step()
@@ -78,6 +83,51 @@ class Fit_Model:
             original = labels.data
             total += labels.size(0)
             correct += predicted.eq(original.data).cpu().sum()
+            train_loss += loss.item()
+
+        epoch_acc = 100. * correct/total
+        epoch_loss = train_loss / data.no_batches
+
+        print('Epoch:{} training loss:'
+              ' {} training accuracy {}'.format(epoch + 1,
+                                               np.round(epoch_loss,4),
+                                               np.round(epoch_acc,4)))
+
+        return epoch_acc, epoch_loss
+
+    def train_process_mixup(self, epoch, train_data_engine):
+        self.network = self.network.train()
+        self.lr_rate_setting(epoch)
+        data = train_data_engine
+
+        train_loss = 0
+        correct = 0
+        total = 0
+
+        data.shuffle_data()
+        print('no of batched', data.no_batches)
+        for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(train.no_batch)
+            inputs, y, labels_a, labels_b, lam = data.mini_batch()
+            inputs, labels_a, labels_b = map(Variable, (inputs, labels_a, labels_b))
+        
+            labels_a = torch.tensor(labels_a, dtype=torch.long)
+            labels_b = torch.tensor(labels_b, dtype=torch.long)
+            
+            outputs = self.network(inputs)
+            loss = self.mixup_criterion(outputs, labels_a, labels_b, lam )
+            
+            
+            self.optimizer.zero_grad() 
+            loss.backward()
+            self.__clip_gradient(self.optimizer, 0.1)
+            self.optimizer.step()
+
+
+            _, predicted = torch.max(outputs.data, 1)
+            original = y.data
+            total += y.size(0)
+            correct += (lam * predicted.eq(labels_a.data).cpu().sum().float()
+                    + (1 - lam) * predicted.eq(labels_b.data).cpu().sum().float())
             train_loss += loss.item()
 
         epoch_acc = 100. * correct/total
@@ -156,10 +206,14 @@ class Fit_Model:
         if self.pretrained_epoch is None:
             self.pretrained_epoch = 0
         else:
-            self.pretrained_epoch +=1
+            self.pretrained_epoch +=1    
 
         for epoch in range(self.pretrained_epoch, (self.pretrained_epoch+no_epoch)):
-            train_acc, train_loss = self.train_process(epoch, train_data_engine)
+            #Mixup
+            if self.alpha!=0:
+                train_acc, train_loss = self.train_process_mixup(epoch, train_data_engine)
+            else:
+                train_acc, train_loss = self.train_process(epoch, train_data_engine)
             valid_acc, valid_loss = self.valid_process(epoch, valid_data_engine)
 
             temp = np.array([train_acc, train_loss, valid_acc, valid_loss])
