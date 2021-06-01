@@ -1,0 +1,10 @@
+# Ignore pycache
+*.pyc
+
+#Ignore folders
+baseline
+audio_features
+model_zoo
+old_scripts
+past_result
+dataset

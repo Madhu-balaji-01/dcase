@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from data_engin import Data_Engin
-from models.model import ENSEMBLE, VGG_M, VGG_M2, DCASE_PAST, DCASE_PAST2
+from models.model import BASELINE, ENSEMBLE, ENSEMBLE_BASELINE, VGG_M, VGG_M2, DCASE_PAST, DCASE_PAST2
 from fit_model import Fit_Model
 
 import argparse
@@ -25,7 +25,7 @@ parser.add_argument('--mono',
                     default = 'mean',
                     help = 'Method to merge channels: [mean, diff]')
 parser.add_argument('--epoch',
-                    default = 30,
+                    default = 50,
                     help = 'Number of epochs to run.')
 parser.add_argument('--batch_size',
                     default = 16,
@@ -69,7 +69,8 @@ class Main_Train:
                       n_mels=self.n_mels,
                       win_len=self.win_len,
                       hop_len=self.hop_len,
-                      alpha = self.alpha)
+                      alpha = self.alpha,
+                      tr_or_val= 'tr')
 
     self.valid = Data_Engin(method=self.method,
                        mono=self.mono,
@@ -81,14 +82,15 @@ class Main_Train:
                       n_fft=self.n_fft,
                       n_mels=self.n_mels,
                       win_len=self.win_len,
-                      hop_len=self.hop_len)
+                      hop_len=self.hop_len,
+                      tr_or_val='val')
 
   def get_network(self, network_type, models, multiple_gpu=True):
     if network_type == 'single':
       network = next(iter(models.values()))
       
     elif network_type == 'ensemble':
-      network = ENSEMBLE(model_a=models['model_a'],
+      network = ENSEMBLE_BASELINE(model_a=models['model_a'],
                          model_b=models['model_b'],
                          no_class=self.no_class)
 
@@ -99,7 +101,7 @@ class Main_Train:
     
     return network.to(self.device)    
 
-  def fit_and_train(self, network, optimizer, criteria, save_model_address=None, save_mode=True):
+  def fit_and_train(self, network, optimizer, criteria, save_model_address=None, save_mode=True, is_baseline= False):
     if save_model_address:
       self.save_model_address = save_model_address
       
@@ -109,7 +111,8 @@ class Main_Train:
                               criteria=criteria,
                               lr_state=self.lr_state,
                               save_model_address=self.save_model_address,
-                              alpha = self.alpha)
+                              alpha = self.alpha,
+                              is_baseline = is_baseline)
 
     fit_model_class.train_model(no_epoch=self.epoch, train_data_engine=self.train,
                                 valid_data_engine=self.valid, save_mode=save_mode)
@@ -155,9 +158,10 @@ if __name__ == '__main__':
   
   # --------------------------------------------------------------------------------------------------------- #
   # load first model
-  model_a =  {'model_a': DCASE_PAST(no_class=trainer.no_class)}
+  model_a =  {'model_a': BASELINE(no_class=trainer.no_class)}
   network = trainer.get_network('single', models=model_a, multiple_gpu=False)
-
+  
+  
   # train first model
   optimizer = optim.SGD(network.parameters(),
                         lr=trainer.lr,
@@ -167,13 +171,14 @@ if __name__ == '__main__':
   trained_models['model_a'] = trainer.fit_and_train(network=network,
                                                     optimizer=optimizer,
                                                     criteria=criteria,
-                                                    save_mode=False)
+                                                    save_mode=False,
+                                                    is_baseline= True)
   
   trainer.show_model_config(trained_models['model_a'].__class__.__name__)
   
   # --------------------------------------------------------------------------------------------------------- #
   # load second model
-  model_b =  {'model_b': DCASE_PAST2(no_class=trainer.no_class)}
+  model_b =  {'model_b': VGG_M2(no_class=trainer.no_class)}
   network = trainer.get_network('single', models=model_b, multiple_gpu=False)
 
   # train second model
@@ -185,7 +190,8 @@ if __name__ == '__main__':
   trained_models['model_b'] = trainer.fit_and_train(network=network,
                                                     optimizer=optimizer,
                                                     criteria=criteria,
-                                                    save_mode=False)
+                                                    save_mode=False,
+                                                    is_baseline = False)
   
   trainer.show_model_config(trained_models['model_b'].__class__.__name__)
   

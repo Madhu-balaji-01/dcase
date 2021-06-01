@@ -1,17 +1,24 @@
+import os
+import pandas as pd
 from au_transform import Audio_Transform
+from load_features import Load_Features
+from torch.utils.data import DataLoader
 from torch.autograd import Variable
 import numpy as np
-import pandas as pd
 import random
 import torch
 import math
+from torch.utils import data
+import h5py
+from IPython import embed
 
 class Data_Engin:
 
     def __init__(self, method='post', mono='mean', address=None,
                  spectra_type=None, device=None, batch_size=64,
                  fs=48000, time=1, n_fft = 1024, n_mels=128,
-                 win_len=1024, hop_len=512, alpha = 0, spec_aug = False, manipulate= False):
+                 win_len=1024, hop_len=512, alpha = 0, spec_aug = False, 
+                manipulate= False, tr_or_val = None):
         self.method = method
         self.mono = mono
         self.data_address = address
@@ -43,10 +50,20 @@ class Data_Engin:
                                          para=self.para,
                                          spec_aug=self.spec_aug,
                                          manipulate = self.manipulate)
-
+        
+                
         self.data = self.read_csv()
         self.no_batches = math.floor(len(self.data)/self.batch_size)
         self.batch_itr = 0
+        
+        # Feature extraction
+        self.tr_or_val = tr_or_val
+        self.features = Load_Features(self.tr_or_val)
+        self.features.get_data()
+        self.no_batches_features = math.floor(self.features.__len__()/64)
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        
+       
 
     def shuffle_data(self):
         random.shuffle(self.data)
@@ -70,7 +87,6 @@ class Data_Engin:
         return mixed_x, y_a, y_b, lam
 
     def mini_batch(self):
-
         if self.batch_itr >= self.no_batches:
             self.batch_itr = 0
 
@@ -91,8 +107,37 @@ class Data_Engin:
         else:
             return x,y    
 
-        
+    def mini_batch_features(self):
+        if self.batch_itr >= self.no_batches:
+            self.batch_itr = 0
 
+        start = int(self.batch_itr*64)
+        end = int((self.batch_itr+1)*64)
+        self.batch_itr += 1
+        
+        batch_features = np.empty((0,512))
+        batch_labels = np.empty(0)
+        for i in range(start,end):
+            batch_embed, batch_label = self.features.get_item(i)
+            # batch_embed = Variable(batch_embed).contiguous()
+            # batch_label = Variable(batch_label).contiguous()
+            # batch_features.append(batch_embed)
+            # batch_labels.append(batch_label)
+            
+            # batch_features = torch.cat((batch_features, batch_embed), 0)
+            # batch_labels = torch.cat((batch_labels,batch_label),0)
+            batch_features = np.append(batch_features, batch_embed, axis=0)
+            batch_labels = np.append(batch_labels, [batch_label], axis=0)
+        # batch_features = torch.cat(batch_features, dim=0)
+        # batch_labels = torch.cat(batch_labels, dim=0)
+        batch_features = torch.from_numpy(batch_features)
+        batch_labels = torch.from_numpy(batch_labels)
+        
+        # batch_embed = batch_embed.to(self.device)
+        # batch_label = batch_label.to(self.device) 
+        
+        return batch_features,batch_labels
+        
 
 if __name__ == '__main__':
 

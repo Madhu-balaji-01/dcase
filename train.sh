@@ -1,21 +1,25 @@
 #!/bin/bash
 set -v
-python main_train.py --save_model_address ./model_zoo/dcase_24/ --method post --mono mean
+python ensemble_train.py --save_model_address ./model_zoo/vggm2_baseline/
+# python feature_extract.py --input_path ./dataset/dcase/evaluation_setup/modify_evaluate.csv --output_path  ./audio_features/
 wait
-python main_train.py --save_model_address ./model_zoo/dcase_25/ --method post --mono diff
-wait
-python main_train.py --save_model_address ./model_zoo/dcase_26/ --method pre --mono mean
-wait
-python main_train.py --save_model_address ./model_zoo/dcase_27/ --method pre --mono diff
+exit
+# python main_train.py --save_model_address ./model_zoo/dcase_24/ --method post --mono mean
+# wait
+# python main_train.py --save_model_address ./model_zoo/dcase_25/ --method post --mono diff
+# wait
+# python main_train.py --save_model_address ./model_zoo/dcase_26/ --method pre --mono mean
+# wait
+# python main_train.py --save_model_address ./model_zoo/dcase_27/ --method pre --mono diff
 
 
 # python main_train.py --save_model_address ./model_zoo/dcase1_spec_aug/ --method post --mono mean --network dcase1 --spec_aug True --spectra spectrum --epoch 40 --batch_size 14
 # wait
-python main_train.py --save_model_address ./model_zoo/dcase1_manipulation/ --method post --mono mean --network dcase1 --manipulate True --n_mels 500 --batch_size 14
-wait
+# python main_train.py --save_model_address ./model_zoo/dcase1_manipulation/ --method post --mono mean --network dcase1 --manipulate True --n_mels 500 --batch_size 14
+# wait
+
 # python ensemble_train.py --save_model_address ./model_zoo/dcase_ensemble_14/ --method post --mono mean --win_len 1024 --hop_len 102 --alpha 0.2 --epoch 30 --n_mels 500 --batch_size 14
 # wait
-exit 
 # wait
 # python main_train.py --save_model_address ./model_zoo/baseline_mixup/ --network baseline --n_mels 500
 # python ensemble_train.py --save_model_address ./model_zoo/dcase_ensemble_13/ --method post --mono mean --win_len 1024 --hop_len 102 --alpha 0.2 --epoch 50

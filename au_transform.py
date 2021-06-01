@@ -1,8 +1,8 @@
 import torch
 import librosa
+import soundfile as sf
 import random
 import numpy as np
-from torch import tensor
 from torchvision import transforms
 import torchaudio as torch_audio
 import matplotlib.pyplot as plt
@@ -215,7 +215,8 @@ class Audio_Transform:
         img = None
         for i in range(spectra.shape[0]):
             if i == 0:
-                temp = self.au_to_img(spectra[i, :, :])
+                
+                temp = self.au_to_img(spectra[i, :, :].cpu())
                 img = temp
             else:
                 temp = self.au_to_img(spectra[i, :, :])

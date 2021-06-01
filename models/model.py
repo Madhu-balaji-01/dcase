@@ -1,3 +1,4 @@
+from baseline.train.model import l3_dense
 from torch.autograd.grad_mode import F
 import torch.nn as nn
 # import torch.nn.functional as F
@@ -260,7 +261,7 @@ class Baseline_Block(nn.Module):
     def __init__(self, ch_in, ch_out):
         super(Baseline_Block, self).__init__()
         self.fc = nn.Linear(in_features=ch_in, out_features=ch_out)
-        self.bn = nn.BatchNorm1d(ch_out)
+        self.bn = nn.BatchNorm2d(ch_out)
         self.relu = nn.ReLU()
         self.drop = nn.Dropout(p=0.2)
 
@@ -272,7 +273,7 @@ class Baseline_Block(nn.Module):
         return x
 
 class BASELINE(nn.Module):
-    def __init__(self, no_class):
+    def __init__(self,no_class):
         super(BASELINE, self).__init__()
         self.model = nn.Sequential(
           nn.Linear(512,512),
@@ -289,7 +290,7 @@ class BASELINE(nn.Module):
           nn.ReLU(),
           nn.Dropout(p=0.2),
 
-          nn.Linear(64,self.num_classes)
+          nn.Linear(64,no_class)
 
         )
         
@@ -330,6 +331,32 @@ class ENSEMBLE(nn.Module):
         out = self.ensemble(out)
         
         return out
+
+class ENSEMBLE_BASELINE(nn.Module):
+    def __init__(self, model_a, model_b, no_class):
+        super(ENSEMBLE_BASELINE,self).__init__()
+        self.model_a = model_a
+        self.model_b = model_b
+        self.model_a.fc_out = nn.Identity()
+        self.model_b.fc_out = nn.Identity()
+        self.relu = nn.ReLU()
+        self.ensemble = nn.Linear(4096+256, no_class)
+    
+    def forward(self, x):
+        self.model_a.eval()
+        x1 = self.model_a(x)
+        x1 = x1.view(x1.size(0), -1)
+        
+        x2 = self.model_b(x)
+        x2 = x2.view(x2.size(0), -1)
+        
+        out = torch.cat((x1,x2), dim=1)
+        out = self.relu(out)
+        out = self.ensemble(out)
+        
+        return out
+        
+        
     
 if __name__=="__main__":
     from torchsummary import summary
@@ -338,6 +365,6 @@ if __name__=="__main__":
     # model_a = VGG_M(10)
     # model_b = DCASE_PAST(10)
     # model=ENSEMBLE(model_a, model_b, 10)
-    model = VGG_M2(no_class)
+    model = BASELINE(no_class)
     model.to(device)
-    print(summary(model, (1,128,32)))
+    print(summary(model))

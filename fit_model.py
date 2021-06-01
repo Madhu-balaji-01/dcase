@@ -7,7 +7,7 @@ class Fit_Model:
 
     def __init__(self, network, device,
                  lr_state, optimizer,
-                 criteria, save_model_address=None, alpha = 0):
+                 criteria, save_model_address=None, alpha = 0, is_baseline = False):
 
         self.network = network
         self.device = device
@@ -19,6 +19,7 @@ class Fit_Model:
         self.alpha = alpha 
         self.pretrained_epoch = None
         self.pretrained_valid_acc = None
+        self.is_baseline = is_baseline
 
     def __set_lr(self, optimizer, lr):
         for group in optimizer.param_groups:
@@ -66,7 +67,7 @@ class Fit_Model:
         total = 0
 
         data.shuffle_data()
-        print('no of batched', data.no_batches)
+        print('no of batches', data.no_batches)
         for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(train.no_batch)
             inputs, labels = data.mini_batch()
             labels = labels.long()
@@ -122,7 +123,6 @@ class Fit_Model:
             self.__clip_gradient(self.optimizer, 0.1)
             self.optimizer.step()
 
-
             _, predicted = torch.max(outputs.data, 1)
             original = y.data
             total += y.size(0)
@@ -137,6 +137,48 @@ class Fit_Model:
               ' {} training accuracy {}'.format(epoch + 1,
                                                np.round(epoch_loss,4),
                                                np.round(epoch_acc,4)))
+
+        return epoch_acc, epoch_loss
+    
+    def train_process_features(self, epoch, train_data_engine):
+        self.network = self.network.train()
+        self.lr_rate_setting(epoch)
+        data = train_data_engine
+
+        train_loss = 0
+        correct = 0
+        total = 0
+
+        print('no of batches', data.no_batches_features)
+        for _ in tqdm(range(data.no_batches_features), dynamic_ncols=True):  # range(train.no_batch)
+            inputs, labels = data.mini_batch_features()
+            # print("2", inputs.shape)
+            # print("3", labels.shape)
+            labels = labels.long()
+            inputs = inputs.to('cuda:0')
+            labels = labels.to('cuda:0')
+            
+            outputs = self.network(inputs.float())
+            loss = self.criteria(outputs, labels)
+            
+            self.optimizer.zero_grad() 
+            loss.backward()
+            self.__clip_gradient(self.optimizer, 0.1)
+            self.optimizer.step()
+
+            _, predicted = torch.max(outputs.data, 1)
+            original = labels.data
+            total += labels.size(0)
+            correct += predicted.eq(original.data).cpu().sum()
+            train_loss += loss.item()
+
+        epoch_acc = 100. * correct/total
+        epoch_loss = train_loss / data.no_batches_features
+
+        print('Epoch:{} training loss:'
+            ' {} training accuracy {}'.format(epoch + 1,
+                                            np.round(epoch_loss,4),
+                                            np.round(epoch_acc,4)))
 
         return epoch_acc, epoch_loss
 
@@ -167,6 +209,41 @@ class Fit_Model:
         # epoch_acc = torch.true_divide(correct, total).data
         epoch_acc = 100. * correct / total
         epoch_loss = valid_loss / data.no_batches
+
+        print('Epoch:{} '
+              'validation loss: '
+              '{} validation Accuracy {}'.format(epoch + 1,
+                                                 np.round(epoch_loss, 4),
+                                                 np.round(epoch_acc, 4)))
+        return epoch_acc, epoch_loss
+    
+    def valid_process_features(self, epoch, valid_data_engine):
+
+        self.network = self.network.eval()
+        data = valid_data_engine
+
+        valid_loss = 0
+        correct = 0
+        total = 0
+
+        # data.shuffle_data()
+        with torch.no_grad():
+            for _ in tqdm(range(data.no_batches_features), dynamic_ncols=True):  # range(valid.no_batch)
+                inputs, labels = data.mini_batch_features()
+                labels = torch.FloatTensor(labels).long()
+                outputs = self.network(torch.FloatTensor(inputs))
+
+                loss = self.criteria(outputs, labels)
+
+                _, predicted = torch.max(outputs.data, 1)
+                original = labels.data
+                total += labels.size(0)
+                correct += predicted.eq(original.data).cpu().sum()
+                valid_loss += loss.detach().item()
+
+        # epoch_acc = torch.true_divide(correct, total).data
+        epoch_acc = 100. * correct / total
+        epoch_loss = valid_loss / data.no_batches_features
 
         print('Epoch:{} '
               'validation loss: '
@@ -212,9 +289,16 @@ class Fit_Model:
             #Mixup
             if self.alpha!=0:
                 train_acc, train_loss = self.train_process_mixup(epoch, train_data_engine)
+            #Feature-based
+            elif self.is_baseline:
+                train_acc, train_loss = self.train_process_features(epoch, train_data_engine)
             else:
                 train_acc, train_loss = self.train_process(epoch, train_data_engine)
-            valid_acc, valid_loss = self.valid_process(epoch, valid_data_engine)
+                
+            if self.is_baseline:
+                valid_acc, valid_loss = self.valid_process_features(epoch, valid_data_engine)
+            else:
+                valid_acc, valid_loss = self.valid_process_features(epoch, valid_data_engine)
 
             temp = np.array([train_acc, train_loss, valid_acc, valid_loss])
             graph = np.vstack((graph,temp))

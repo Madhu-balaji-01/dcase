@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import optimizer
 from data_engin import Data_Engin
-from models.model import BASELINE, ENSEMBLE, VGG_M, VGG_M2, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE
+from models.model import BASELINE, ENSEMBLE, ENSEMBLE_BASELINE, VGG_M, VGG_M2, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE
 from fit_model import Fit_Model
 
 import argparse
@@ -81,7 +81,8 @@ class Main_Train:
                       hop_len=self.hop_len,
                       alpha = self.alpha,
                       spec_aug= self.spec_aug,
-                      manipulate= self.manipulate)
+                      manipulate= self.manipulate,
+                      tr_or_val='tr')
 
     self.valid = Data_Engin(method=self.method,
                        mono=self.mono,
@@ -93,7 +94,8 @@ class Main_Train:
                       n_fft=self.n_fft,
                       n_mels=self.n_mels,
                       win_len=self.win_len,
-                      hop_len=self.hop_len)
+                      hop_len=self.hop_len,
+                      tr_or_val='val')
 
   def get_network(self, network_type, models, multiple_gpu=True):
     if network_type == 'single':
@@ -181,18 +183,21 @@ if __name__ == '__main__':
     model_a =  {'model_a': DCASE_PAST2(no_class=trainer.no_class)}
   elif args.network == 'baseline':
     model_a =  {'model_a': BASELINE(no_class=trainer.no_class)}
+  elif args.network == 'ens_bas':
+    model_a = {'model_a': ENSEMBLE_BASELINE(model = VGG_M2,no_class=trainer.no_class)}
+    
   network = trainer.get_network('single', models=model_a, multiple_gpu=True)
 
   trainer.save_model_address = trainer.save_model_address + model_a['model_a'].__class__.__name__ + '_'
 
   # train model
-  optimizer = optim.SGD(network.parameters(),
-                        lr=trainer.lr,
-                        momentum=0.9,
-                        weight_decay=5e-4)
-  # optimizer = optim.Adam(network.parameters(),
-  #                        lr=trainer.lr,
-  #                        weight_decay=0.0001)
+  # optimizer = optim.SGD(network.parameters(),
+  #                       lr=trainer.lr,
+  #                       momentum=0.9,
+  #                       weight_decay=5e-4)
+  optimizer = optim.Adam(network.parameters(),
+                         lr=trainer.lr,
+                         weight_decay=0.0001)
   criteria = nn.CrossEntropyLoss()
   trained_models['model_a'] = trainer.fit_and_train(network=network,
                                                     optimizer=optimizer,
