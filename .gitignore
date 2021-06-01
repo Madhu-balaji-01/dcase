@@ -1,6 +1,7 @@
 # Ignore pycache
 *.pyc
-
+*.ipynb
+*.json
 #Ignore folders
 baseline
 audio_features

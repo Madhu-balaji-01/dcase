@@ -25,10 +25,10 @@ parser.add_argument('--mono',
                     default = 'mean',
                     help = 'Method to merge channels: [mean, diff]')
 parser.add_argument('--epoch',
-                    default = 50,
+                    default = 100,
                     help = 'Number of epochs to run.')
 parser.add_argument('--batch_size',
-                    default = 16,
+                    default = 64,
                     help = 'Batch size to be used.')
 parser.add_argument('--n_mels',
                     default = 128,

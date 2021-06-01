@@ -39,6 +39,8 @@ class Load_Features:
     
     def get_item(self,index):
         hf = h5py.File(self.path_input, 'r')
+        # print(hf_array.type)
+        # # print(self.hf.type)
 
         emb = np.array(hf[self.all_files[index]])
         

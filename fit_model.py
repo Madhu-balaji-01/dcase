@@ -66,7 +66,7 @@ class Fit_Model:
         correct = 0
         total = 0
 
-        data.shuffle_data()
+        # data.shuffle_data()
         print('no of batches', data.no_batches)
         for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(train.no_batch)
             inputs, labels = data.mini_batch()
@@ -105,7 +105,7 @@ class Fit_Model:
         correct = 0
         total = 0
 
-        data.shuffle_data()
+        # data.shuffle_data()
         print('no of batched', data.no_batches)
         for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(train.no_batch)
             inputs, y, labels_a, labels_b, lam = data.mini_batch()
@@ -191,7 +191,7 @@ class Fit_Model:
         correct = 0
         total = 0
 
-        data.shuffle_data()
+        # data.shuffle_data()
         with torch.no_grad():
             for _ in tqdm(range(data.no_batches), dynamic_ncols=True):  # range(valid.no_batch)
                 inputs, labels = data.mini_batch()
@@ -230,8 +230,10 @@ class Fit_Model:
         with torch.no_grad():
             for _ in tqdm(range(data.no_batches_features), dynamic_ncols=True):  # range(valid.no_batch)
                 inputs, labels = data.mini_batch_features()
-                labels = torch.FloatTensor(labels).long()
-                outputs = self.network(torch.FloatTensor(inputs))
+                inputs = inputs.to('cuda:0')
+                labels = labels.to('cuda:0')
+                labels = labels.long()
+                outputs = self.network(inputs.float())
 
                 loss = self.criteria(outputs, labels)
 

@@ -1,4 +1,3 @@
-from baseline.train.model import l3_dense
 from torch.autograd.grad_mode import F
 import torch.nn as nn
 # import torch.nn.functional as F
@@ -343,7 +342,6 @@ class ENSEMBLE_BASELINE(nn.Module):
         self.ensemble = nn.Linear(4096+256, no_class)
     
     def forward(self, x):
-        self.model_a.eval()
         x1 = self.model_a(x)
         x1 = x1.view(x1.size(0), -1)
         
