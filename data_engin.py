@@ -15,7 +15,7 @@ from IPython import embed
 class Data_Engin:
 
     def __init__(self, method='post', mono='mean', address=None,
-                 spectra_type=None, device=None, batch_size=64,
+                 spectra_type=None, device=None, batch_size=16,
                  fs=48000, time=1, n_fft = 1024, n_mels=128,
                  win_len=1024, hop_len=512, alpha = 0, spec_aug = False, 
                 manipulate= False, tr_or_val = None):

@@ -32,7 +32,7 @@ parser.add_argument('--epoch',
                     default = 30,
                     help = 'Number of epochs to run.')
 parser.add_argument('--batch_size',
-                    default = 64,
+                    default = 16,
                     help = 'Batch size to be used.')
 parser.add_argument('--n_mels',
                     default = 128,
