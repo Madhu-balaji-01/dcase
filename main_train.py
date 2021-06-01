@@ -5,7 +5,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import optimizer
 from data_engin import Data_Engin
-from models.model import BASELINE, ENSEMBLE, ENSEMBLE_BASELINE, VGG_M, VGG_M2, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE
+from models.model import VGG_M, VGG_M2, VGG_M3, DCASE_PAST, DCASE_PAST2, BASELINE, ENSEMBLE
+from resnet import resnet34
 from fit_model import Fit_Model
 
 import argparse
@@ -31,7 +32,7 @@ parser.add_argument('--epoch',
                     default = 30,
                     help = 'Number of epochs to run.')
 parser.add_argument('--batch_size',
-                    default = 16,
+                    default = 64,
                     help = 'Batch size to be used.')
 parser.add_argument('--n_mels',
                     default = 128,
@@ -183,8 +184,8 @@ if __name__ == '__main__':
     model_a =  {'model_a': DCASE_PAST2(no_class=trainer.no_class)}
   elif args.network == 'baseline':
     model_a =  {'model_a': BASELINE(no_class=trainer.no_class)}
-  elif args.network == 'ens_bas':
-    model_a = {'model_a': ENSEMBLE_BASELINE(model = VGG_M2,no_class=trainer.no_class)}
+  elif args.network == 'resnet':
+    model_a = {'model_a': resnet34(pretrained = True)}
     
   network = trainer.get_network('single', models=model_a, multiple_gpu=True)
 

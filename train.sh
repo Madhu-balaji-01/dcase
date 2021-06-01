@@ -1,6 +1,6 @@
 #!/bin/bash
 set -v
-python ensemble_train.py --save_model_address ./model_zoo/vggm2_baseline/
+python ensemble_train.py --save_model_address ./model_zoo/resnet34/ 
 # python feature_extract.py --input_path ./dataset/dcase/evaluation_setup/modify_evaluate.csv --output_path  ./audio_features/
 wait
 exit

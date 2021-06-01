@@ -1,4 +1,5 @@
 # Ignore pycache
+.gitignore
 *.pyc
 *.ipynb
 *.json
