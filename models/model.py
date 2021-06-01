@@ -278,16 +278,16 @@ class BASELINE(nn.Module):
           nn.Linear(512,512),
           nn.BatchNorm1d(512),
           nn.ReLU(),
-          nn.Dropout(p=0.2),
+          nn.Dropout(p=0.3),
           nn.Linear(512,128),
           nn.BatchNorm1d(128),
           nn.ReLU(),
-          nn.Dropout(p=0.2),
+          nn.Dropout(p=0.3),
 
           nn.Linear(128,64),
           nn.BatchNorm1d(64),
           nn.ReLU(),
-          nn.Dropout(p=0.2),
+          nn.Dropout(p=0.3),
 
           nn.Linear(64,no_class)
 
@@ -342,6 +342,7 @@ class ENSEMBLE_BASELINE(nn.Module):
         self.ensemble = nn.Linear(4096+256, no_class)
     
     def forward(self, x):
+
         x1 = self.model_a(x)
         x1 = x1.view(x1.size(0), -1)
         

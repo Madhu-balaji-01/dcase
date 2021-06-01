@@ -25,7 +25,7 @@ parser.add_argument('--mono',
                     default = 'mean',
                     help = 'Method to merge channels: [mean, diff]')
 parser.add_argument('--epoch',
-                    default = 100,
+                    default = 50,
                     help = 'Number of epochs to run.')
 parser.add_argument('--batch_size',
                     default = 64,
@@ -163,10 +163,9 @@ if __name__ == '__main__':
   
   
   # train first model
-  optimizer = optim.SGD(network.parameters(),
-                        lr=trainer.lr,
-                        momentum=0.9,
-                        weight_decay=5e-4)
+  optimizer = optim.Adam(network.parameters(),
+                        lr = trainer.lr,
+                        weight_decay=0.001)
   criteria = nn.CrossEntropyLoss()
   trained_models['model_a'] = trainer.fit_and_train(network=network,
                                                     optimizer=optimizer,
@@ -182,10 +181,9 @@ if __name__ == '__main__':
   network = trainer.get_network('single', models=model_b, multiple_gpu=False)
 
   # train second model
-  optimizer = optim.SGD(network.parameters(),
-                        lr=trainer.lr,
-                        momentum=0.9,
-                        weight_decay=5e-4)
+  optimizer = optim.Adam(network.parameters(),
+                        lr = trainer.lr,
+                        weight_decay=0.001)
   criteria = nn.CrossEntropyLoss()
   trained_models['model_b'] = trainer.fit_and_train(network=network,
                                                     optimizer=optimizer,
@@ -212,10 +210,9 @@ if __name__ == '__main__':
   trainer.save_model_address += ensemble_addr
 
   # train ensemble model
-  optimizer = optim.SGD(network.parameters(),
-                        lr=trainer.lr,
-                        momentum=0.9,
-                        weight_decay=5e-4)
+  optimizer = optim.Adam(network.parameters(),
+                        lr = trainer.lr,
+                        weight_decay=0.001)
   criteria = nn.CrossEntropyLoss()
   trained_models['ensemble_model'] = trainer.fit_and_train(network=network,
                                                     optimizer=optimizer,
